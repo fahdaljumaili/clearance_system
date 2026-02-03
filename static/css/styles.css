@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #f8f9fa; /* لون خلفية رمادي فاتح */
+}
+
+/* تصميم شاشة تسجيل الدخول */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* تصميم Navbar */
+.navbar-brand img {
+    max-height: 40px;
+    margin-inline-end: 10px;
+}
+
+/* تصميم البطاقات (Cards) */
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    background-color: #e9ecef;
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* تحسين الجداول */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.table thead {
+    background-color: #343a40;
+    color: #ffffff;
+}
+
+/* تحسين الأزرار وحقول الإدخال */
+.btn-primary {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 0.25rem rgba(0, 86, 179, 0.25);
+}
+
+/* أيقونات الحالة */
+.status-icon {
+    font-size: 1.2rem;
+    vertical-align: middle;
+    margin-inline-end: 5px;
+}
+
+.text-success { color: #198754 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-warning { color: #ffc107 !important; }

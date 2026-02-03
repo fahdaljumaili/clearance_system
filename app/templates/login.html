@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الدخول{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-form">
+        <h2 class="mb-4 text-center">تسجيل الدخول</h2>
+
+        <!-- عرض رسائل الفلاش (الأخطاء أو النجاح) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- إذا كان المستخدم مسجلاً بالفعل -->
+        {% if current_user.is_authenticated %}
+        <div class="text-center">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill fs-4 d-block mb-2"></i>
+                <strong>أنت مسجل الدخول بالفعل</strong>
+                <p class="mb-0">مرحباً، {{ current_user.username }}</p>
+            </div>
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('main.home') }}" class="btn btn-primary">
+                    <i class="bi bi-speedometer2"></i> الذهاب للوحة التحكم
+                </a>
+                <a href="{{ url_for('main.logout') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-box-arrow-right"></i> تسجيل الخروج
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <!-- نموذج تسجيل الدخول -->
+        <form method="POST" action="{{ url_for('main.login') }}">
+            {{ form.csrf_token }} <!-- حماية ضد CSRF -->
+            <div class="mb-3">
+                <label for="identifier" class="form-label">الرقم الجامعي / اسم المستخدم</label>
+                <input type="text" class="form-control" id="identifier" name="identifier"
+                    placeholder="ادخل الرقم الجامعي او اسم المستخدم" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">كلمة المرور</label>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="password" name="password"
+                        placeholder="ادخل كلمة المرور" required>
+                    <!-- زر إظهار/إخفاء كلمة المرور -->
+                    <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('main.reset_request') }}" class="text-decoration-none">هل نسيت كلمة المرور؟</a>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // سكربت بسيط لإظهار وإخفاء كلمة المرور عند الضغط على أيقونة العين
+    const togglePassword = document.querySelector('#toggleLoginPassword');
+    const password = document.querySelector('#password');
+
+    if (togglePassword && password) {
+        togglePassword.addEventListener('click', function (e) {
+            // تبديل نوع الحقل بين password و text
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            // تبديل الأيقونة
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+    }
+</script>
+<style>
+    /* تنسيقات خاصة بصفحة تسجيل الدخول فقط */
+
+    /* إخفاء Navbar والفوتر في هذه الصفحة لتركيز الانتباه */
+    nav,
+    footer {
+        display: none;
+    }
+
+    .navbar-toggler {
+        display: none;
+    }
+</style>
+{% endblock %}

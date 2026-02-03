@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+<!-- 
+    صفحة طلب استعادة كلمة المرور
+    يقوم المستخدم بإدخال بريده الإلكتروني لاستلام رابط إعادة التعيين
+-->
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">استعادة كلمة المرور</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }} <!-- حماية CSRF -->
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {% if form.email.errors %}
+                        <!-- عرض حالة الخطأ إذا كان البريد غير صالح -->
+                        {{ form.email(class="form-control is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}
+                            <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{ form.email(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* إخفاء زر القائمة في هذه الصفحة لتركيز الانتباه */
+    .navbar-toggler {
+        display: none;
+    }
+</style>
+{% endblock %}

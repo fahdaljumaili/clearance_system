@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<!-- 
+    ملف القالب الأساسي (Base Template)
+    وراثة القوالب: ترث جميع الصفحات الأخرى من هذا الملف لتجنب تكرار الكود
+    يحتوي على: HED (الروابط والخطوط)، Navbar (الشريط العلوي)، Footer (التذييل)
+-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام براءة الذمة{% endblock %}</title>
+    <!-- مكتبة Bootstrap (نسخة RTL لدعم العربية) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- أيقونات Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- ملف التنسيقات الخاص بنا -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+
+    <!-- شريط التنقل العلوي (Navbar) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                نظام براءة الذمة الإلكتروني
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- إظهار زر تسجيل الخروج فقط للمستخدم المسجل -->
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.logout') }}">تسجيل الخروج</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- المحتوى الرئيسي للصفحة -->
+    <main class="container mt-4">
+        <!-- هنا يتم حقن محتوى الصفحات الفرعية -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- تذييل الصفحة (Footer) -->
+    <footer class="text-center text-muted py-4 mt-auto bg-light">
+        <p>&copy; {{ now.year }} | Powered by <strong>Fahd Ahmed</strong></p>
+    </footer>
+
+    <!-- ملفات الجافا سكريبت -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- كتلة للنصوص البرمجية الإضافية (Scripts) الخاصة بكل صفحة -->
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

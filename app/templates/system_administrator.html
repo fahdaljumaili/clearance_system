@@ -1,0 +1,713 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم مدير النظام{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">لوحة تحكم مدير النظام</h3>
+
+<!-- عرض رسائل النظام التنبيهية -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- شريط التنقل بين التبويبات (Tabs) -->
+<ul class="nav nav-tabs mb-4" id="supervisorTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {{ 'active' if active_tab != 'users' else '' }}" id="analytics-tab" data-bs-toggle="tab"
+            data-bs-target="#analytics" type="button" role="tab">الإحصائيات والمتابعة</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {{ 'active' if active_tab == 'users' else '' }}" id="users-tab" data-bs-toggle="tab"
+            data-bs-target="#users" type="button" role="tab">إدارة المستخدمين</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="supervisorTabsContent">
+    <!-- التبويب الأول: الإحصائيات وجدول الطلبات -->
+    <div class="tab-pane fade {{ 'show active' if active_tab != 'users' else '' }}" id="analytics" role="tabpanel">
+
+        <!-- بطاقات ملخص الإحصائيات -->
+        <div class="row mb-4 text-center">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 mb-2 bg-body rounded">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">إجمالي الطلاب</h5>
+                        <h2 class="display-6 fw-bold text-primary">{{ total_students }}</h2>
+                        <i class="bi bi-people fs-1 text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 mb-2 bg-body rounded">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">مكتملة</h5>
+                        <h2 class="display-6 fw-bold text-success">{{ completed_count }}</h2>
+                        <i class="bi bi-check-circle fs-1 text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3 mb-2 bg-body rounded">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">قيد الانتظار</h5>
+                        <h2 class="display-6 fw-bold text-warning">{{ pending_count }}</h2>
+                        <i class="bi bi-hourglass-split fs-1 text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الرسوم البيانية (Charts) -->
+        <div class="row mb-4">
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-bold">نسبة الطلاب المبرّأين مقابل قيد الانتظار</div>
+                    <div class="card-body">
+                        <canvas id="statusPieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-bold">طلبات قيد الانتظار حسب القسم</div>
+                    <div class="card-body">
+                        <canvas id="deptBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول متابعة الطلاب -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>سجلات الطلاب</span>
+                <div class="d-flex gap-2">
+                    <!-- حقول التصفية والبحث في الجدول -->
+                    <input type="text" id="search-input" class="form-control form-control-sm" onkeyup="filterTable()"
+                        placeholder="ابحث بالرقم الجامعي...">
+                    <select id="final-status-filter" class="form-select form-select-sm" onchange="filterTable()"
+                        aria-label="تصفية الحالة النهائية" title="تصفية الحالة النهائية">
+                        <option value="">كل الحالات</option>
+                        <option value="مكتمل">مكتمل</option>
+                        <option value="غير مكتمل">غير مكتمل</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="supervisor-table">
+                        <thead>
+                            <tr>
+                                <th>الرقم الجامعي</th>
+                                <th>الحالة النهائية</th>
+                                <th>آخر تحديث</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="supervisor-body">
+                            {% for student in students %}
+                            <tr class="student-row" data-final-status="{{ student.final_status }}">
+                                <td class="student-id fw-bold">{{ student.university_id }}</td>
+                                <td>
+                                    {% if student.final_status == 'مكتمل' %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> مكتمل</span>
+                                    {% else %}
+                                    <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill"></i> غير
+                                        مكتمل</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ (student.records | max(attribute='updated_at')).updated_at | local_time if
+                                    student.records else 'N/A' }}</td>
+                                <td>
+                                    <!-- زر عرض التفاصيل في نافذة منبثقة Modal -->
+                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                                        data-bs-target="#studentModal{{ loop.index0 }}">
+                                        <i class="bi bi-eye"></i> عرض التفاصيل
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- نافذة تفاصيل الطالب (Modal) -->
+                            <div class="modal fade" id="studentModal{{ loop.index0 }}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">تفاصيل براءة الذمة: {{ student.university_id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="إغلاق" title="إغلاق"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <ul class="list-group list-group-flush">
+                                                {% for r in student.records %}
+                                                <li
+                                                    class="list-group-item d-flex justify-content-between align-items-start">
+                                                    <div class="ms-2 me-auto">
+                                                        <div class="fw-bold">{{ r.department }}</div>
+                                                        <small class="text-muted">{{ r.comment or 'لا يوجد تعليق' }} |
+                                                            {{ r.updated_at | local_time }}</small>
+                                                    </div>
+                                                    {% if r.status == 'approved' %}<span
+                                                        class="badge bg-success rounded-pill">موافق</span>
+                                                    {% elif r.status == 'rejected' %}<span
+                                                        class="badge bg-danger rounded-pill">مرفوض</span>
+                                                    {% else %}<span class="badge bg-warning text-dark rounded-pill">قيد
+                                                        الانتظار</span>
+                                                    {% endif %}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- التبويب الثاني: إدارة المستخدمين -->
+    <div class="tab-pane fade {{ 'show active' if active_tab == 'users' else '' }}" id="users" role="tabpanel">
+        <!-- قسم الإجراءات العامة -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm bg-warning bg-opacity-10 border-start border-warning border-4">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">إدارة الدورة الجديدة</h5>
+                            <small class="text-muted">يمكنك هنا بدء دورة براءة ذمة جديدة لجميع الطلاب. هذا الإجراء سيحذف
+                                كافة السجلات القديمة.</small>
+                        </div>
+                        <button class="btn btn-warning fw-bold px-4" data-bs-toggle="modal"
+                            data-bs-target="#resetClearanceModal">
+                            <i class="bi bi-arrow-clockwise me-2"></i> بدء دورة جديدة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- نموذج إضافة مستخدم جديد -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">إضافة مستخدم جديد</div>
+                    <div class="card-body">
+                        <form method="POST" autocomplete="off">
+                            {{ user_form.hidden_tag() }}
+                            <!-- حقل الاسم الكامل -->
+                            <div class="mb-3" id="fullNameField" style="display:none;">
+                                {{ user_form.full_name.label(class="form-label") }}
+                                {{ user_form.full_name(class="form-control" + (" is-invalid" if
+                                user_form.full_name.errors else "")) }}
+                                {% for error in user_form.full_name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- اسم المستخدم -->
+                            <div class="mb-3" id="usernameField">
+                                {{ user_form.username.label(class="form-label") }}
+                                {{ user_form.username(class="form-control" + (" is-invalid" if user_form.username.errors
+                                else ""), autocomplete="new-username") }}
+                                {% for error in user_form.username.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- البريد الإلكتروني -->
+                            <div class="mb-3">
+                                {{ user_form.email.label(class="form-label") }}
+                                {{ user_form.email(class="form-control" + (" is-invalid" if user_form.email.errors else
+                                ""), autocomplete="new-email") }}
+                                {% for error in user_form.email.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- كلمة المرور -->
+                            <div class="mb-3">
+                                {{ user_form.password.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ user_form.password(class="form-control" + (" is-invalid" if
+                                    user_form.password.errors else ""), autocomplete="new-password", id="passwordInput")
+                                    }}
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    {% for error in user_form.password.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- اختيار الدور (طالب / مسؤول قسم / مدير نظام) -->
+                            <div class="mb-3">
+                                {{ user_form.role.label(class="form-label") }}
+                                {{ user_form.role(class="form-select", id="roleSelect") }}
+                            </div>
+
+                            <!-- حقول ديناميكية تظهر وتختفي حسب الدور المختار -->
+                            <div class="mb-3" id="uniIdField" style="display:none;">
+                                {{ user_form.university_id.label(class="form-label") }}
+                                {{ user_form.university_id(class="form-control") }}
+                            </div>
+                            <div class="mb-3" id="deptField" style="display:none;">
+                                {{ user_form.department.label(class="form-label") }}
+                                {{ user_form.department(class="form-control") }}
+                            </div>
+                            <div class="mb-3" id="stageField" style="display:none;">
+                                {{ user_form.stage.label(class="form-label") }}
+                                {{ user_form.stage(class="form-control") }}
+                            </div>
+                            <div class="mb-3" id="studyTypeField" style="display:none;">
+                                {{ user_form.study_type.label(class="form-label") }}
+                                {{ user_form.study_type(class="form-control") }}
+                            </div>
+
+                            <div class="d-grid">
+                                {{ user_form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- نافذة تعديل بيانات المستخدم (Edit User Modal) -->
+            <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editUserModalLabel">تعديل بيانات المستخدم</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="POST" action="">
+                                {{ edit_user_form.hidden_tag() }}
+                                <!-- حقول التعديل (مشابهة للإضافة) -->
+                                <div class="mb-3">
+                                    {{ edit_user_form.full_name.label(class="form-label") }}
+                                    {{ edit_user_form.full_name(class="form-control", id="edit_full_name") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ edit_user_form.username.label(class="form-label") }}
+                                    {{ edit_user_form.username(class="form-control", id="edit_username") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ edit_user_form.email.label(class="form-label") }}
+                                    {{ edit_user_form.email(class="form-control", id="edit_email") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ edit_user_form.password.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ edit_user_form.password(class="form-control", id="edit_password") }}
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleEditPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    {{ edit_user_form.role.label(class="form-label") }}
+                                    {{ edit_user_form.role(class="form-select", id="edit_role") }}
+                                </div>
+                                <div class="mb-3" id="editUniIdField" style="display:none;">
+                                    {{ edit_user_form.university_id.label(class="form-label") }}
+                                    {{ edit_user_form.university_id(class="form-control", id="edit_university_id") }}
+                                </div>
+                                <div class="mb-3" id="editDeptField" style="display:none;">
+                                    {{ edit_user_form.department.label(class="form-label") }}
+                                    {{ edit_user_form.department(class="form-control", id="edit_department") }}
+                                </div>
+                                <div class="mb-3" id="editStageField" style="display:none;">
+                                    {{ edit_user_form.stage.label(class="form-label") }}
+                                    {{ edit_user_form.stage(class="form-control", id="edit_stage") }}
+                                </div>
+                                <div class="mb-3" id="editStudyTypeField" style="display:none;">
+                                    {{ edit_user_form.study_type.label(class="form-label") }}
+                                    {{ edit_user_form.study_type(class="form-control", id="edit_study_type") }}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">إلغاء</button>
+                                    {{ edit_user_form.submit(class="btn btn-primary") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قائمة المستخدمين (جدول) -->
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span>دليل المستخدمين</span>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="user-search" class="form-control form-control-sm"
+                                onkeyup="filterUsersTable()" placeholder="بحث بالاسم أو البريد...">
+                            <select id="user-role-filter" class="form-select form-select-sm"
+                                onchange="filterUsersTable()">
+                                <option value="">كل الأدوار</option>
+                                <option value="department_officer">مسؤول القسم</option>
+                                <option value="student">طالب</option>
+                                <option value="system_admin">مدير النظام</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle" id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>الاسم</th>
+                                        <th>الدور</th>
+                                        <th>تفاصيل إضافية</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-body">
+                                    {% for user in all_users %}
+                                    <tr class="user-row" data-role="{{ user.role }}">
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <div class="fw-bold user-name">
+                                                <a href="#" class="text-decoration-none text-dark edit-user-link"
+                                                    data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                                    data-id="{{ user.id }}" data-username="{{ user.username or '' }}"
+                                                    data-full-name="{{ user.full_name or '' }}"
+                                                    data-email="{{ user.email }}" data-role="{{ user.role }}"
+                                                    data-uni-id="{{ user.university_id or '' }}"
+                                                    data-department="{{ user.department or '' }}"
+                                                    data-stage="{{ user.stage or '' }}"
+                                                    data-study-type="{{ user.study_type or '' }}">
+                                                    {{ user.full_name or user.username }}
+                                                </a>
+                                            </div>
+                                            <small class="text-muted user-email">{{ user.email }}</small>
+                                        </td>
+                                        <td>
+                                            {% if user.role == 'system_admin' %}
+                                            <span class="badge bg-dark">مدير النظام</span>
+                                            {% elif user.role == 'department_officer' %}
+                                            <span class="badge bg-primary">مسؤول القسم</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">طالب</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.role == 'student' %}
+                                            {{ user.university_id }}
+                                            {% elif user.role == 'department_officer' %}
+                                            {{ user.department or '' }}
+                                            {% else %}
+
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.id != current_user.id %}
+                                            <form action="{{ url_for('main.delete_user', user_id=user.id) }}"
+                                                method="POST"
+                                                onsubmit="return confirm('هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف جميع بياناته المرتبطة!');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                                <button type="submit" class="btn btn-sm btn-danger"><i
+                                                        class="bi bi-trash"></i></button>
+                                            </form>
+                                            {% else %}
+                                            <small class="text-muted">الحالي</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تأكيد تصفير النظام -->
+<div class="modal fade" id="resetClearanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold">تنبيه: بدء دورة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fs-5">هل أنت متأكد من رغبتك في بدء براءة ذمة جديدة؟</p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>تحذير هام:</strong> سيتم حذف <u>جميع</u> سجلات براءة الذمة الحالية (الموافقات والطلبات)
+                    لجميع الطلاب. لا يمكن التراجع عن هذا الإجراء.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form action="{{ url_for('main.reset_all_clearances') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-danger">نعم، احذف السجلات وابدأ من جديد</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- تصفية جدول المستخدمين (بحث + تصفية حسب الدور) ---
+    function filterUsersTable() {
+        const searchTerm = document.getElementById("user-search").value.toLowerCase();
+        const roleFilter = document.getElementById("user-role-filter").value;
+
+        document.querySelectorAll("#users-body tr.user-row").forEach(row => {
+            const name = row.querySelector(".user-name").textContent.toLowerCase();
+            const email = row.querySelector(".user-email").textContent.toLowerCase();
+            const role = row.getAttribute("data-role");
+
+            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+            const matchesRole = (roleFilter === "" || role === roleFilter);
+
+            row.style.display = (matchesSearch && matchesRole) ? "" : "none";
+        });
+    }
+
+    // --- منطق الحقول الديناميكية في النموذج (السيناريو: إضافة مستخدم) ---
+    const roleSelect = document.getElementById('roleSelect');
+    const uniIdField = document.getElementById('uniIdField');
+    const deptField = document.getElementById('deptField');
+    const stageField = document.getElementById('stageField');
+    const studyTypeField = document.getElementById('studyTypeField');
+    const usernameField = document.getElementById('usernameField');
+    const fullNameField = document.getElementById('fullNameField');
+
+    function toggleFields() {
+        if (roleSelect.value === 'student') {
+            uniIdField.style.display = 'block';
+            deptField.style.display = 'block';
+            stageField.style.display = 'block';
+            studyTypeField.style.display = 'block';
+            usernameField.style.display = 'none';
+            fullNameField.style.display = 'block';
+            // تغيير التسمية للطالب
+            fullNameField.querySelector('label').innerText = 'اسم الطالب';
+        } else if (roleSelect.value === 'department_officer') {
+            uniIdField.style.display = 'none';
+            deptField.style.display = 'block';
+            stageField.style.display = 'none';
+            studyTypeField.style.display = 'none';
+            usernameField.style.display = 'block';
+            fullNameField.style.display = 'block';
+            fullNameField.querySelector('label').innerText = 'الاسم الكامل';
+        } else {
+            uniIdField.style.display = 'none';
+            deptField.style.display = 'none';
+            stageField.style.display = 'none';
+            studyTypeField.style.display = 'none';
+            usernameField.style.display = 'block';
+            fullNameField.style.display = 'block';
+        }
+    }
+
+    roleSelect.addEventListener('change', toggleFields);
+    toggleFields(); // تشغيل عند التحميل
+
+    // --- تصفية جدول الطلاب (بحث + حالة) ---
+    function filterTable() {
+        const searchTerm = document.getElementById("search-input").value.toUpperCase();
+        const statusFilter = document.getElementById("final-status-filter").value;
+
+        document.querySelectorAll("#supervisor-body tr.student-row").forEach(row => {
+            const id = row.querySelector(".student-id").textContent.toUpperCase();
+            const status = row.getAttribute("data-final-status");
+
+            const matchesSearch = id.includes(searchTerm);
+            const matchesStatus = (statusFilter === "" || status === statusFilter);
+
+            row.style.display = (matchesSearch && matchesStatus) ? "" : "none";
+        });
+    }
+
+    // --- سكربت زر إظهار/إخفاء كلمة المرور ---
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#passwordInput');
+
+    if (togglePassword && password) {
+        togglePassword.addEventListener('click', function (e) {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+    }
+
+    // --- سكربت إظهار/إخفاء كلمة المرور في نافذة التعديل ---
+    const toggleEditPassword = document.querySelector('#toggleEditPassword');
+    const editPassword = document.querySelector('#edit_password');
+
+    if (toggleEditPassword && editPassword) {
+        toggleEditPassword.addEventListener('click', function (e) {
+            const type = editPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+            editPassword.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+    }
+
+    // --- منطق نافذة التعديل (تعبئة البيانات تلقائياً) ---
+    const editUserModal = document.getElementById('editUserModal');
+    if (editUserModal) {
+        editUserModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            // استخراج البيانات من attribute الزر
+            const id = button.getAttribute('data-id');
+            const username = button.getAttribute('data-username');
+            const fullName = button.getAttribute('data-full-name');
+            const email = button.getAttribute('data-email');
+            const role = button.getAttribute('data-role');
+            const uniId = button.getAttribute('data-uni-id');
+            const department = button.getAttribute('data-department');
+            const stage = button.getAttribute('data-stage');
+            const studyType = button.getAttribute('data-study-type');
+
+            // تحديث محتوى النموذج داخل النافذة
+            const modalForm = editUserModal.querySelector('form');
+            modalForm.action = `/user/${id}/edit`;
+
+            editUserModal.querySelector('#edit_username').value = username;
+            editUserModal.querySelector('#edit_full_name').value = fullName;
+            editUserModal.querySelector('#edit_email').value = email;
+            editUserModal.querySelector('#edit_role').value = role;
+            editUserModal.querySelector('#edit_university_id').value = uniId;
+            editUserModal.querySelector('#edit_department').value = department;
+            editUserModal.querySelector('#edit_stage').value = stage;
+            editUserModal.querySelector('#edit_study_type').value = studyType;
+            editUserModal.querySelector('#edit_department').value = department;
+
+            // تحديث الحقول الظاهرة يدوياً
+            toggleEditFields();
+        });
+    }
+
+    // --- الحقول الديناميكية في نافذة التعديل ---
+    const editRoleSelect = document.getElementById('edit_role');
+    const editUniIdField = document.getElementById('editUniIdField');
+    const editDeptField = document.getElementById('editDeptField');
+    const editStageField = document.getElementById('editStageField');
+    const editStudyTypeField = document.getElementById('editStudyTypeField');
+    const editUsernameField = document.getElementById('edit_username').parentElement;
+    const editFullNameField = document.getElementById('edit_full_name').parentElement;
+
+    function toggleEditFields() {
+        if (!editRoleSelect) return;
+        const role = editRoleSelect.value;
+        if (role === 'student') {
+            editUniIdField.style.display = 'block';
+            editDeptField.style.display = 'block';
+            editStageField.style.display = 'block';
+            editStudyTypeField.style.display = 'block';
+            editUsernameField.style.display = 'none';
+            editFullNameField.style.display = 'block';
+            editFullNameField.querySelector('label').innerText = 'اسم الطالب';
+        } else if (role === 'department_officer') {
+            editUniIdField.style.display = 'none';
+            editDeptField.style.display = 'block';
+            editStageField.style.display = 'none';
+            editStudyTypeField.style.display = 'none';
+            editUsernameField.style.display = 'block';
+            editFullNameField.style.display = 'block';
+            editFullNameField.querySelector('label').innerText = 'الاسم الكامل';
+        } else {
+            editUniIdField.style.display = 'none';
+            editDeptField.style.display = 'none';
+            editStageField.style.display = 'none';
+            editStudyTypeField.style.display = 'none';
+            editUsernameField.style.display = 'block';
+            editFullNameField.style.display = 'block';
+        }
+    }
+
+    if (editRoleSelect) {
+        editRoleSelect.addEventListener('change', toggleEditFields);
+    }
+</script>
+
+<!-- تمرير بيانات الإحصائيات من Jinja إلى JS داخل سكريبت JSON -->
+<script id="dashboard-data" type="application/json">
+    {
+        "completed": {{ completed_count }},
+        "pending": {{ pending_count }},
+        "deptNames": {{ pending_by_dept.keys() | list | tojson }},
+        "deptValues": {{ pending_by_dept.values() | list | tojson }}
+    }
+</script>
+
+<!-- مكتبة Chart.js للرسوم البيانية -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // --- قراءة البيانات ---
+    const dashboardData = JSON.parse(document.getElementById('dashboard-data').textContent);
+
+    // --- رسم المخطط الدائري (Pie Chart) ---
+    const ctxPie = document.getElementById('statusPieChart').getContext('2d');
+    new Chart(ctxPie, {
+        type: 'pie',
+        data: {
+            labels: ['مكتمل', 'قيد الانتظار'],
+            datasets: [{
+                data: [dashboardData.completed, dashboardData.pending],
+                backgroundColor: ['#198754', '#ffc107'], // أخضر للنجاح، أصفر للانتظار
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // --- رسم المخطط العمودي (Bar Chart) ---
+    const ctxBar = document.getElementById('deptBarChart').getContext('2d');
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: dashboardData.deptNames,
+            datasets: [{
+                label: 'عدد الطلبات المعلقة',
+                data: dashboardData.deptValues,
+                backgroundColor: '#0d6efd', // أزرق أساسي
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 } // التأكد من أن الأرقام صحيحة (بدون كسور)
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

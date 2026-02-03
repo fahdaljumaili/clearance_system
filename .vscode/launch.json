@@ -1,0 +1,25 @@
+{
+    // استخدم IntelliSense لمعرفة المزيد عن الخيارات المتاحة.
+    // مرر الفأرة فوق الخصائص لعرض الوصف.
+    // لمزيد من المعلومات، قم بزيارة: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // إعداد تشغيل خادم Flask (Python)
+            "name": "Python: Run Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/run.py", // الملف الرئيسي لتشغيل التطبيق
+            "console": "integratedTerminal", // استخدام الطرفية المدمجة في VS Code
+            "justMyCode": false // السماح بتتبع الكود داخل المكتبات الخارجية (لأغراض التصحيح)
+        },
+        {
+            // إعداد تشغيل متصفح Chrome لفتح التطبيق
+            "name": "Launch Chrome (https://localhost:8000)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://localhost:8000", // الرابط الذي سيتم فتحه
+            "webRoot": "${workspaceFolder}" // المجلد الجذري للمشروع
+        }
+    ]
+}

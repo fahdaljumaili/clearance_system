@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم الطالب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>مرحباً بك، {{ student.full_name or student.username }}</h3>
+
+    <!-- ======== بداية قسم الإشعارات ======== -->
+    <!-- زر الجرس مع عداد الإشعارات غير المقروءة -->
+    <button class="btn btn-light position-relative" type="button" id="notificationDropdown" data-bs-toggle="dropdown"
+        aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i> <!-- أيقونة الجرس -->
+        <!-- حساب عدد الإشعارات غير المقروءة باستخدام Jinja2 filtration -->
+        {% set unread = current_user.notifications|selectattr('is_read','equalto',False)|list|length %}
+        {% if unread > 0 %}
+        <span
+            class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle notification-badge">{{
+            unread }}</span>
+        {% endif %}
+    </button>
+    </button>
+
+    <!-- القائمة المنسدلة للإشعارات -->
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0 notification-dropdown-menu"
+        aria-labelledby="notificationDropdown">
+        <!-- ترتيب الإشعارات من الأحدث للأقدم -->
+        {%- for n in current_user.notifications|sort(attribute='timestamp', reverse=True) -%}
+        <li class="dropdown-item border-bottom py-2 {% if not n.is_read %}fw-bold{% endif %}">
+            <small>{{ n.message }}</small><br>
+            <!-- استخدام الفلتر local_time لعرض الوقت المحلي -->
+            <small class="text-muted notification-timestamp">{{ n.timestamp | local_time }}</small>
+        </li>
+        {% else %}
+        <li class="dropdown-item text-muted text-center py-3">لا توجد إشعارات</li>
+        {% endfor %}
+
+        <!-- خيار "قراءة الكل" إذا وجدت إشعارات -->
+        {% if current_user.notifications %}
+        <li>
+            <hr class="dropdown-divider my-1">
+        </li>
+        <li>
+            <a class="dropdown-item text-center text-primary py-2" href="{{ url_for('main.mark_notifications_read') }}">
+                <small>وضع علامة مقروءة على الكل</small>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+<!-- ======== نهاية قسم الإشعارات ======== -->
+</div>
+
+<!-- عرض رسائل النظام (Flashed Messages) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- بطاقة حالة براءة الذمة -->
+<div class="card">
+    <div class="card-header">
+        حالة براءة الذمة
+    </div>
+    <div class="card-body">
+        {% set total_departments = DEPARTMENTS|length %}
+        {% set total_records = clearance_records|length %}
+
+        <!-- الحالة الأولى: الطالب لم يقدم طلباً بعد -->
+        {% if total_records == 0 %}
+        <p>لم تقم بطلب براءة ذمة بعد.</p>
+        <form action="{{ url_for('main.request_clearance') }}" method="POST">
+            {{ form.csrf_token }} <!-- حماية CSRF -->
+            <button type="submit" class="btn btn-primary">بدء طلب براءة ذمة</button>
+        </form>
+        {% else %}
+
+        <!-- جدول عرض حالة الموافقات لكل قسم -->
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>القسم</th>
+                    <th>الحالة</th>
+                    <th>ملاحظات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in clearance_records %}
+                <tr>
+                    <td>{{ record.department }}</td>
+                    <td>
+                        <!-- عرض الشارة المناسبة حسب الحالة -->
+                        {% if record.status == 'approved' %}
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle-fill status-icon"></i>
+                            موافق
+                            عليه</span>
+                        {% elif record.status == 'rejected' %}
+                        <span class="badge bg-danger rounded-pill"><i class="bi bi-x-circle-fill status-icon"></i>
+                            مرفوض</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark rounded-pill"><i
+                                class="bi bi-hourglass-split status-icon"></i> قيد
+                            الانتظار</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ record.comment or 'لا يوجد' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- التحقق من اكتمال جميع الموافقات لتفعيل زر الطباعة -->
+        {% if total_records == total_departments and all_approved %}
+        <div class="alert alert-success mt-3">
+            <h5 class="alert-heading">تهانينا!</h5>
+            <p>لقد اكتملت براءة الذمة الخاصة بك. يمكنك الآن طباعة النموذج النهائي.</p>
+        </div>
+        <a href="{{ url_for('main.download_clearance_form') }}" class="btn btn-success"><i
+                class="bi bi-printer-fill"></i> طباعة نموذج براءة الذمة</a>
+        {% else %}
+        <div class="alert alert-info mt-3">
+            لا تزال هناك إجراءات معلقة. يرجى متابعة حالة الطلب.
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- بطاقة إعدادات الإشعارات -->
+<div class="card mt-4">
+    <div class="card-header">
+        إعدادات الإشعارات الفورية
+    </div>
+    <div class="card-body">
+        <p>قم بتفعيل الإشعارات ليصلك كل جديد بخصوص طلبك.</p>
+        <button id="enable-notifications" class="btn btn-outline-primary" data-vapid-key="{{ vapid_public_key }}">
+            <i class="bi bi-bell"></i> تفعيل الإشعارات
+        </button>
+        <button id="disable-notifications" class="btn btn-outline-danger">
+            <i class="bi bi-bell-slash"></i> إلغاء تفعيل الإشعارات
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- تضمين ملف الجافا سكريبت الخاص بالإشعارات الفورية -->
+<script src="{{ url_for('static', filename='js/push-subscription.js') }}"></script>
+{% endblock %}

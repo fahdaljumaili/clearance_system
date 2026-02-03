@@ -1,0 +1,54 @@
+/* Google Fonts: Cairo - استخدام خط كايرو لدعم العربية بشكل جميل */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+:root {
+    /* متغيرات الألوان الرئيسية للنظام */
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --light-bg: #f8f9fa;
+    --dark-text: #212529;
+    --border-radius: 0.5rem;
+}
+
+body {
+    font-family: 'Cairo', sans-serif; /* تعيين الخط الافتراضي */
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+}
+
+/* --- تنسيق البطاقات (Cards) ---
+   تصميم بسيط وأنيق للبطاقات المستخدمة في لوحات التحكم
+*/
+.card {
+    border: 1px solid rgba(0, 0, 0, .05);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, .05);
+    font-weight: 600;
+}
+
+/* --- تحسينات النصوص (Typography) ---
+   جعل العناوين أكثر بروزاً وسمكاً
+*/
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 700;
+}
+
+.btn {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 600;
+}
+
+/* --- تحسينات الجداول --- */
+.table th {
+    font-weight: 600;
+}
