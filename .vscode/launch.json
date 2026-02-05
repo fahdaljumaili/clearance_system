@@ -15,10 +15,10 @@
         },
         {
             // إعداد تشغيل متصفح Chrome لفتح التطبيق
-            "name": "Launch Chrome (https://localhost:8000)",
+            "name": "Launch Chrome (http://localhost:5000)",
             "type": "chrome",
             "request": "launch",
-            "url": "https://localhost:8000", // الرابط الذي سيتم فتحه
+            "url": "http://localhost:5000", // الرابط الذي سيتم فتحه
             "webRoot": "${workspaceFolder}" // المجلد الجذري للمشروع
         }
     ]

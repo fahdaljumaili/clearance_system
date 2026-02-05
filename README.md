@@ -48,7 +48,7 @@ The **University Clearance System** is a web application designed to solve the p
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/username/clearance_system.git
+    git clone https://github.com/fahdaljumaili/clearance_system.git
     cd clearance_system
     ```
 
