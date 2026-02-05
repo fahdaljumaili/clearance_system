@@ -1,57 +1,77 @@
-# نظام براءة الذمة الإلكتروني (University Clearance System)
+# University Clearance System
 
-مشروع تخرج يهدف إلى أتمتة عملية براءة الذمة في الجامعات، مما يتيح للطلاب تقديم الطلبات ومتابعتها إلكترونياً، ويسهل على موظفي الأقسام إدارة الطلبات.
+![Language](https://img.shields.io/badge/Language-Python-blue)
+![Framework](https://img.shields.io/badge/Framework-Flask-green)
+![Database](https://img.shields.io/badge/Database-SQLite-lightgrey)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
-## 🚀 المميزات
-- **للطلاب:** تقديم طلب براءة ذمة، متابعة الحالة (مقبول، مرفوض، قيد الانتظار)، استلام إشعارات فورية، طباعة الوثيقة النهائية.
-- **لموظفي الأقسام:** استلام الطلبات، تغيير الحالة، إضافة ملاحظات.
-- **لمدير النظام:** لوحة تحكم إحصائية، إدارة المستخدمين (إضافة، تعديل، حذف)، تصفير النظام لبدء دورة جديدة.
-- **تقنيات:** نظام إشعارات (Check-in/Push), واجهات داعمة للعربية (RTL).
+> A graduation project that automates the university clearance process, transforming it into a fully electronic system to simplify procedures for students and staff.
 
-## 🛠️ التقنيات المستخدمة
-- **Backend:** Python, Flask, Flask-SQLAlchemy, Flask-Login, Flask-Security
-- **Frontend:** HTML5, CSS3, Bootstrap 5 (RTL), JavaScript
-- **Database:** SQLite (يمكن تغييره إلى PostgreSQL/MySQL)
-- **Notifications:** VAPID / Web Push
+---
 
-## ⚙️ طريقة التشغيل (Setup)
+## 📖 About
+The **University Clearance System** is a web application designed to solve the problem of paperwork and bureaucracy in universities. The system allows students to submit a clearance request in a single step through their account, and enables various departments (Library, Finance, Dormitories, etc.) to process requests electronically. It provides dedicated dashboards for each role (Student, Officer, Admin) with a real-time notification system to ensure efficient communication.
 
-### 1. استنساخ المستودع (Clone)
-```bash
-git clone https://github.com/username/clearance_system.git
-cd clearance_system
-```
+## 📸 Screenshots
+> *Screenshots from the actual system in operation.*
 
-### 2. إعداد البيئة الافتراضية (Virtual Environment)
-```bash
-python -m venv venv
-# للتفعيل على Windows:
-venv\Scripts\activate
-# للتفعيل على Mac/Linux:
-source venv/bin/activate
-```
+### 🔐 Login Page
+![Login Page](screenshots/Login.png)
 
-### 3. تثبيت المكتبات المطلوبة
-```bash
-pip install -r requirements.txt
-```
+### 📊 Dashboards
+| Student Dashboard | Department Officer Dashboard |
+| :---: | :---: |
+| ![Student Dashboard](screenshots/Student%20control%20panel.png) | ![Dept Officer Dashboard](screenshots/Department%20officer%20control%20panel%20-%20College%20library.png) |
+| *Status Tracking* | *Request Management* |
 
-### 4. إعداد الملفات الضرورية
-يحتاج التطبيق إلى ملفات مفاتيح لإشعارات المتصفح (VAPID Keys). قم بتشغيل السكربت المرفق لتوليدها تلقائياً:
-```bash
-python setup_env.py
-```
-*سيقوم هذا السكربت بإنشاء مجلد `instance` وملف `vapid_keys.json`.*
+### 🛡️ System Administration
+| Statistics & Analytics | User Management |
+| :---: | :---: |
+| ![Admin Stats](screenshots/System%20administrator%20control%20panel%20-%20Statistics%20and%20follow-up.png) | ![User Management](screenshots/System%20administrator%20control%20panel%20-%20User%20management.png) |
+| *System Overview* | *Control Users* |
 
-### 5. تشغيل التطبيق
-```bash
-python run.py
-```
-سيعمل التطبيق على الرابط: `https://localhost:8000` (لاحظ استخدام HTTPS لضمان عمل الإشعارات).
+## ✨ Features
+*   **Role-Based Access Control (RBAC):** (Student, Department Officer, System Administrator).
+*   **Real-time Notifications (Web Push):** Instant browser alerts when status updates occur.
+*   **Document Generation:** Generate a printable PDF clearance certificate upon approval.
+*   **Seamless User Experience:** Interface supports Arabic (RTL) and is mobile-responsive.
+*   **Statistical Dashboard:** Charts displaying completion rates and department workload.
 
-## 📝 ملاحظات
-- **حساب المدير الافتراضي:** يمكنك إنشاؤه أو تعديل البيانات من قاعدة البيانات.
-- **البريد الإلكتروني:** تأكد من ضبط متغيرات البيئة `MAIL_USERNAME` و `MAIL_PASSWORD` في نظام التشغيل لديك لإرسال رسائل البريد الإلكتروني فعلياً.
+## 🛠️ Tech Stack
+*   **Backend:** Python 3, Flask
+*   **Database:** SQLite (SQLAlchemy ORM)
+*   **Frontend:** Bootstrap 5, Jinja2, JavaScript
+*   **Authentication:** Flask-Login
+*   **Notifications:** VAPID / PyWebPush
 
-## 📜 الحقوق
-مشروع تخرج - [اسمك هنا] - 2026
+## 🚀 Installation & Setup
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/username/clearance_system.git
+    cd clearance_system
+    ```
+
+2.  **Set Up Virtual Environment:**
+    ```bash
+    python -m venv venv
+    venv\Scripts\activate   # Windows
+    # source venv/bin/activate  # Mac/Linux
+    ```
+
+3.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Generate Keys (Setup):**
+    ```bash
+    python setup_env.py
+    ```
+
+5.  **Run the Application:**
+    ```bash
+    python run.py
+    ```
+    Open your browser at: `http://localhost:5000`
+
