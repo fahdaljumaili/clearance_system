@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+.env
+
+# Database
+*.db
+*.sqlite3
+instance/
+# Note: We exclude the entire instance/ folder because it contains secrets (vapid_keys.json) and the database.
+# Do NOT uncomment the next line unless you are sure you want to commit secrets (NOT RECOMMENDED for GitHub).
+# !instance/vapid_keys.json
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+Desktop.ini
