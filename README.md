@@ -1,6 +1,9 @@
 # University Clearance System
 
 ![Language](https://img.shields.io/badge/Language-Python-blue)
+![Language](https://img.shields.io/badge/Language-JavaScript-yellow)
+![Language](https://img.shields.io/badge/Language-HTML5-orange)
+![Language](https://img.shields.io/badge/Language-CSS3-blueviolet)
 ![Framework](https://img.shields.io/badge/Framework-Flask-green)
 ![Database](https://img.shields.io/badge/Database-SQLite-lightgrey)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
