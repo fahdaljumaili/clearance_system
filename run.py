@@ -11,6 +11,15 @@ with app.app_context():
     # إنشاء الجداول في قاعدة البيانات إن لم تكن موجودة مسبقاً
     db.create_all()
 
+    # إضافة عمود temp_password إذا لم يكن موجوداً (ترقية قاعدة البيانات)
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    columns = [col['name'] for col in inspector.get_columns('user')]
+    if 'temp_password' not in columns:
+        db.session.execute(text('ALTER TABLE user ADD COLUMN temp_password VARCHAR(50)'))
+        db.session.commit()
+        print("Added temp_password column to user table.")
+
     # التحقق من وجود مستخدم مدير، وإنشاؤه تلقائياً إذا لم يكن موجوداً
     if not User.query.filter_by(role='system_admin').first():
         print("Creating default admin user...")

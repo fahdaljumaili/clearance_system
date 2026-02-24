@@ -1,4 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
+import os
+import pandas as pd
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
+
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
@@ -558,3 +561,96 @@ def reset_all_clearances():
         flash(f'حدث خطأ أثناء إعادة التعيين: {str(e)}', 'danger')
 
     return redirect(url_for('main.system_administrator'))
+
+@main_routes.route('/system_admin/import_students', methods=['POST'])
+@login_required
+def import_students():
+    if current_user.role != 'system_admin':
+        abort(403)
+
+    if 'file' not in request.files:
+        flash('لم يتم اختيار ملف', 'danger')
+        return redirect(url_for('main.system_administrator', active_tab='users'))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('لم يتم اختيار ملف', 'danger')
+        return redirect(url_for('main.system_administrator', active_tab='users'))
+
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        try:
+            # قراءة ملف الإكسل باستخدام pandas
+            df = pd.read_excel(file)
+            
+            # تنظيف أسماء الأعمدة (إزالة المسافات الزائدة)
+            df.columns = df.columns.str.strip()
+
+            # التحقق من الأعمدة المطلوبة
+            required_columns = ['الرقم الجامعي', 'الاسم الكامل']
+            if not all(col in df.columns for col in required_columns):
+                flash(f'الملف يجب أن يحتوي على الأعمدة التالية: {", ".join(required_columns)}', 'danger')
+                return redirect(url_for('main.system_administrator', active_tab='users'))
+
+            success_count = 0
+            errors = []
+            imported_passwords = []
+
+            for index, row in df.iterrows():
+                try:
+                    uni_id = str(row['الرقم الجامعي']).strip()
+                    full_name = str(row['الاسم الكامل']).strip()
+                    
+                    # دالة مساعدة لجلب القيمة من عدة احتمالات لاسم العمود
+                    def get_val(possible_cols):
+                        for col in possible_cols:
+                            if col in df.columns and pd.notna(row[col]):
+                                return str(row[col]).strip()
+                        return None
+
+                    email = get_val(['البريد الإلكتروني', 'البريد الالكتروني', 'email', 'Email'])
+                    department = get_val(['القسم', 'department', 'Department'])
+                    stage = get_val(['المرحلة', 'stage', 'Stage'])
+                    study_type = get_val(['نوع الدراسة', 'نوع الدراسة', 'Study Type'])
+
+                    # التحقق مما إذا كان الطالب موجوداً مسبقاً
+                    existing_user = User.query.filter_by(university_id=uni_id).first()
+                    if existing_user:
+                        errors.append(f"الطالب {uni_id} موجود مسبقاً.")
+                        continue
+
+                    # توليد كلمة مرور قوية عشوائية (12 حرف)
+                    import string, random
+                    chars = string.ascii_letters + string.digits + '!@#$%&*'
+                    generated_password = ''.join(random.choice(chars) for _ in range(12))
+
+                    # إنشاء حساب جديد
+                    new_student = User(
+                        university_id=uni_id,
+                        username=uni_id,
+                        full_name=full_name,
+                        email=email,
+                        role='student',
+                        department=department,
+                        stage=stage,
+                        study_type=study_type
+                    )
+                    new_student.set_password(generated_password)
+                    new_student.temp_password = generated_password  # حفظ كلمة المرور لعرضها للمدير
+                    db.session.add(new_student)
+                    success_count += 1
+
+                except Exception as e:
+                    errors.append(f"خطأ في السطر {index + 2}: {str(e)}")
+
+            db.session.commit()
+            
+            if success_count > 0:
+                flash(f'تم استيراد {success_count} طالب بنجاح.', 'success')
+            
+
+        except Exception as e:
+            flash(f'حدث خطأ أثناء معالجة الملف: {str(e)}', 'danger')
+    else:
+        flash('الرجاء رفع ملف Excel بصيغة .xlsx أو .xls', 'danger')
+
+    return redirect(url_for('main.system_administrator', active_tab='users'))

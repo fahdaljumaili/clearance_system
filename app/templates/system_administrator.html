@@ -200,7 +200,14 @@
             <!-- نموذج إضافة مستخدم جديد -->
             <div class="col-md-4 mb-4">
                 <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-header bg-primary text-white">إضافة مستخدم جديد</div>
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <span>إضافة مستخدم جديد</span>
+                        <button class="btn btn-sm btn-light text-success fw-bold" data-bs-toggle="modal"
+                            data-bs-target="#importExcelModal">
+                            <i class="bi bi-file-earmark-excel"></i> استيراد من Excel
+                        </button>
+                    </div>
+
                     <div class="card-body">
                         <form method="POST" autocomplete="off">
                             {{ user_form.hidden_tag() }}
@@ -243,6 +250,10 @@
                                     }}
                                     <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                         <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success" type="button" id="generatePassword"
+                                        title="توليد كلمة مرور قوية">
+                                        <i class="bi bi-key"></i>
                                     </button>
                                     {% for error in user_form.password.errors %}
                                     <div class="invalid-feedback d-block">{{ error }}</div>
@@ -390,7 +401,8 @@
                                                     data-uni-id="{{ user.university_id or '' }}"
                                                     data-department="{{ user.department or '' }}"
                                                     data-stage="{{ user.stage or '' }}"
-                                                    data-study-type="{{ user.study_type or '' }}">
+                                                    data-study-type="{{ user.study_type or '' }}"
+                                                    data-temp-password="{{ user.temp_password or '' }}">
                                                     {{ user.full_name or user.username }}
                                                 </a>
                                             </div>
@@ -465,6 +477,50 @@
         </div>
     </div>
 </div>
+
+<!-- نافذة استيراد الطلاب من Excel -->
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold">استيراد طلاب من Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('main.import_students') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">اختر ملف Excel (.xlsx)</label>
+                        <input class="form-control" type="file" id="excelFile" name="file" accept=".xlsx, .xls"
+                            required>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>تعليمات الملف:</strong>
+                            يجب أن يحتوي الملف على الأعمدة التالية :
+                            <ul>
+                                <li><code>الرقم الجامعي</code></li>
+                                <li><code>الاسم الكامل</code></li>
+                                <li><code>القسم</code></li>
+                                <li><code>المرحلة</code></li>
+                                <li><code>نوع الدراسة</code></li>
+                                <li><code>البريد الإلكتروني</code></li>
+                            </ul>
+                            * سيتم توليد كلمة المرور تلقائياً لكل طالب.
+                        </small>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">رفع واستيراد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 {% endblock %}
 
@@ -556,6 +612,23 @@
         });
     }
 
+    // --- سكربت توليد كلمة مرور قوية ---
+    const generatePasswordBtn = document.querySelector('#generatePassword');
+    if (generatePasswordBtn && password) {
+        generatePasswordBtn.addEventListener('click', function () {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+            let newPassword = '';
+            for (let i = 0; i < 12; i++) {
+                newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            password.value = newPassword;
+            // إظهار كلمة المرور ليراها المدير وينسخها
+            password.setAttribute('type', 'text');
+            togglePassword.querySelector('i').classList.remove('bi-eye');
+            togglePassword.querySelector('i').classList.add('bi-eye-slash');
+        });
+    }
+
     // --- سكربت إظهار/إخفاء كلمة المرور في نافذة التعديل ---
     const toggleEditPassword = document.querySelector('#toggleEditPassword');
     const editPassword = document.querySelector('#edit_password');
@@ -584,6 +657,7 @@
             const department = button.getAttribute('data-department');
             const stage = button.getAttribute('data-stage');
             const studyType = button.getAttribute('data-study-type');
+            const tempPassword = button.getAttribute('data-temp-password');
 
             // تحديث محتوى النموذج داخل النافذة
             const modalForm = editUserModal.querySelector('form');
@@ -598,6 +672,15 @@
             editUserModal.querySelector('#edit_stage').value = stage;
             editUserModal.querySelector('#edit_study_type').value = studyType;
             editUserModal.querySelector('#edit_department').value = department;
+
+            // عرض كلمة المرور المؤقتة في حقل كلمة المرور
+            const editPwd = editUserModal.querySelector('#edit_password');
+            if (tempPassword) {
+                editPwd.value = tempPassword;
+                editPwd.setAttribute('type', 'text'); // إظهارها مباشرة
+            } else {
+                editPwd.value = '';
+            }
 
             // تحديث الحقول الظاهرة يدوياً
             toggleEditFields();

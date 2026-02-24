@@ -18,6 +18,7 @@ class User(db.Model, UserMixin):
     department = db.Column(db.String(100), nullable=True) # القسم (للموظفين والطلاب)
     stage = db.Column(db.String(50), nullable=True)       # المرحلة الدراسية (للطلاب)
     study_type = db.Column(db.String(50), nullable=True)  # نوع الدراسة: صباحي/مسائي (للطلاب)
+    temp_password = db.Column(db.String(50), nullable=True) # كلمة المرور المؤقتة (تظهر للمدير فقط)
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # تاريخ إنشاء الحساب
 
     # خاصية لعرض الاسم المناسب حسب دور المستخدم

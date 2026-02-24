@@ -56,8 +56,8 @@
         }
 
         .header img {
-            max-width: 90px;
-            /* تصغير الشعار قليلاً */
+            max-width: 150px;
+            /* زيادة حجم الشعار */
             margin-bottom: 0.5rem;
         }
 
@@ -172,7 +172,8 @@
         <!-- العنصر الذي سيتم تحويله إلى PDF -->
         <div id="page-to-download">
             <div class="header">
-                <img src="https://placehold.co/100x100/0056b3/FFF?text=شعار+الجامعة" alt="شعار الجامعة">
+                <img src="{{ url_for('static', filename='images/wasit_university_logo.png') }}" alt="شعار جامعة واسط"
+                    style="max-height: 150px;">
                 <h1>وثيقة إثبات براءة ذمة</h1>
             </div>
 
