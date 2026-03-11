@@ -238,6 +238,7 @@ def edit_user(user_id):
         # تحديث كلمة المرور فقط إذا تم إدخال قيمة جديدة
         if form.password.data:
             user.password_hash = generate_password_hash(form.password.data)
+            user.temp_password = None  # مسح كلمة المرور المؤقتة بعد التغيير
             
         try:
             db.session.commit()
@@ -532,6 +533,7 @@ def reset_token(token):
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
+        user.temp_password = None  # مسح كلمة المرور المؤقتة بعد التغيير
         db.session.commit()
         flash('تم تحديث كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول', 'success')
         return redirect(url_for('main.login'))
