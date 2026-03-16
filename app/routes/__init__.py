@@ -13,6 +13,7 @@ from app.forms import LoginForm, UpdateStatusForm, ClearanceRequestForm, Request
 from app.utils.push_notifications import send_push_to_subscription
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
+from threading import Thread
 
 # تعريف المخطط (Blueprint) للمسارات الرئيسية
 main_routes = Blueprint('main', __name__)
@@ -164,6 +165,10 @@ def system_administrator():
             try:
                 db.session.add(new_user)
                 db.session.commit()
+                
+                # إرسال بريد ترحيبي يحتوي على بيانات الدخول
+                send_welcome_email(new_user, user_form.password.data)
+                
                 flash(f'تم إضافة المستخدم {new_user.full_name or new_user.username} بنجاح', 'success')
                 return redirect(url_for('main.system_administrator')) # نمط Post-Redirect-Get
             except Exception as e:
@@ -477,22 +482,58 @@ def download_clearance_form():
 
 # --- دوال المساعدة للبريد الإلكتروني ---
 
+def send_async_email(app, msg):
+    """إرسال البريد في الخلفية لتجنب تجميد الواجهة."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Failed to send async email: {e}")
+
 def send_status_email(user, department, status, comment=None):
     """إرسال بريد إلكتروني للطالب عند تحديث حالته."""
-    status_ar = "مقبول" if status == "approved" else "مرفوض" if status == "rejected" else "قيد المعالجة"
+    status_text = {
+        'approved': 'موافق عليه ✅',
+        'rejected': 'مرفوض ❌'
+    }.get(status, status)
+    
     msg = Message(f'تحديث حالة براءة الذمة - {department}',
                   sender=current_app.config.get('MAIL_USERNAME'),
                   recipients=[user.email])
     
     msg.body = f'''مرحباً {user.full_name or user.username}،
 
-لقد قام قسم {department} بتحديث حالة طلبك إلى: {status_ar}
-
-{f"ملاحظات: {comment}" if comment else ""}
-
-يرجى مراجعة حسابك للمزيد من التفاصيل.
+تم تحديث حالة براءة الذمة الخاصة بك في قسم: {department}
+الحالة الجديدة: {status_text}
 '''
-    mail.send(msg)
+    if comment:
+        msg.body += f'ملاحظة: {comment}\n'
+        
+    Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
+
+def send_welcome_email(user, raw_password):
+    """إرسال بريد ترحيبي يحتوي على بيانات الدخول عند إنشاء الحساب."""
+    if not user.email:
+        return
+        
+    msg = Message('مرحباً بك في نظام الفضاء الوظيفي',
+                  sender=current_app.config.get('MAIL_USERNAME'),
+                  recipients=[user.email])
+                  
+    identifier = user.university_id if user.role == 'student' else user.username
+    msg.body = f'''مرحباً {user.full_name or user.username}،
+
+تم إنشاء حساب لك في نظام براءة الذمة الإلكتروني التابع لجامعة واسط.
+
+بيانات الدخول الخاصة بك:
+اسم المستخدم / الرقم الجامعي: {identifier}
+كلمة المرور: {raw_password}
+
+يرجى تسجيل الدخول وتغيير كلمة المرور في أقرب وقت.
+
+رابط النظام: {url_for('main.login', _external=True)}
+'''
+    Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
 
 def send_reset_email(user):
     """إرسال بريد استعادة كلمة المرور."""
@@ -505,7 +546,7 @@ def send_reset_email(user):
 
 إذا لم تطلب هذا التغيير، فتجاهل هذه الرسالة ولن يحدث أي تغيير.
 '''
-    mail.send(msg)
+    Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
 
 # طلب إعادة تعيين كلمة المرور
 @main_routes.route("/reset_password", methods=['GET', 'POST'])
@@ -639,6 +680,10 @@ def import_students():
                     new_student.set_password(generated_password)
                     new_student.temp_password = generated_password  # حفظ كلمة المرور لعرضها للمدير
                     db.session.add(new_student)
+                    
+                    # إرسال بريد ترحيبي للطالب فور إضافة الحساب
+                    send_welcome_email(new_student, generated_password)
+                    
                     success_count += 1
 
                 except Exception as e:
