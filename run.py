@@ -15,10 +15,10 @@ with app.app_context():
     from sqlalchemy import inspect, text
     inspector = inspect(db.engine)
     columns = [col['name'] for col in inspector.get_columns('user')]
-    if 'temp_password' not in columns:
-        db.session.execute(text('ALTER TABLE user ADD COLUMN temp_password VARCHAR(50)'))
+    if 'temp_password' in columns:
+        db.session.execute(text('ALTER TABLE user DROP COLUMN temp_password'))
         db.session.commit()
-        print("Added temp_password column to user table.")
+        print("Dropped temp_password column from user table for security.")
 
     # التحقق من وجود مستخدم مدير، وإنشاؤه تلقائياً إذا لم يكن موجوداً
     if not User.query.filter_by(role='system_admin').first():

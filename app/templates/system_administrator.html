@@ -401,8 +401,7 @@
                                                     data-uni-id="{{ user.university_id or '' }}"
                                                     data-department="{{ user.department or '' }}"
                                                     data-stage="{{ user.stage or '' }}"
-                                                    data-study-type="{{ user.study_type or '' }}"
-                                                    data-temp-password="{{ user.temp_password or '' }}">
+                                                    data-study-type="{{ user.study_type or '' }}">
                                                     {{ user.full_name or user.username }}
                                                 </a>
                                             </div>
@@ -629,18 +628,6 @@
         });
     }
 
-    // --- سكربت إظهار/إخفاء كلمة المرور في نافذة التعديل ---
-    const toggleEditPassword = document.querySelector('#toggleEditPassword');
-    const editPassword = document.querySelector('#edit_password');
-
-    if (toggleEditPassword && editPassword) {
-        toggleEditPassword.addEventListener('click', function (e) {
-            const type = editPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-            editPassword.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('bi-eye');
-            this.querySelector('i').classList.toggle('bi-eye-slash');
-        });
-    }
 
     // --- منطق نافذة التعديل (تعبئة البيانات تلقائياً) ---
     const editUserModal = document.getElementById('editUserModal');
@@ -656,31 +643,12 @@
             const uniId = button.getAttribute('data-uni-id');
             const department = button.getAttribute('data-department');
             const stage = button.getAttribute('data-stage');
-            const studyType = button.getAttribute('data-study-type');
-            const tempPassword = button.getAttribute('data-temp-password');
-
-            // تحديث محتوى النموذج داخل النافذة
-            const modalForm = editUserModal.querySelector('form');
-            modalForm.action = `/user/${id}/edit`;
-
-            editUserModal.querySelector('#edit_username').value = username;
-            editUserModal.querySelector('#edit_full_name').value = fullName;
-            editUserModal.querySelector('#edit_email').value = email;
-            editUserModal.querySelector('#edit_role').value = role;
-            editUserModal.querySelector('#edit_university_id').value = uniId;
-            editUserModal.querySelector('#edit_department').value = department;
-            editUserModal.querySelector('#edit_stage').value = stage;
-            editUserModal.querySelector('#edit_study_type').value = studyType;
             editUserModal.querySelector('#edit_department').value = department;
 
-            // عرض كلمة المرور المؤقتة في حقل كلمة المرور
+            // التأكد من أن حقل كلمة المرور فارغ دائماً عند فتح نافذة التعديل
             const editPwd = editUserModal.querySelector('#edit_password');
-            if (tempPassword) {
-                editPwd.value = tempPassword;
-                editPwd.setAttribute('type', 'text'); // إظهارها مباشرة
-            } else {
-                editPwd.value = '';
-            }
+            editPwd.value = '';
+            editPwd.setAttribute('type', 'password');
 
             // تحديث الحقول الظاهرة يدوياً
             toggleEditFields();
