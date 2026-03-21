@@ -26,8 +26,8 @@ def home():
     if current_user.is_authenticated:
         if current_user.role == 'student':
             return redirect(url_for('main.student'))
-        elif current_user.role == 'department_officer':
-            return redirect(url_for('main.department_officer'))
+        elif current_user.role == 'section_head':
+            return redirect(url_for('main.section_head'))
         elif current_user.role == 'system_admin':
             return redirect(url_for('main.system_administrator'))
             
@@ -57,8 +57,8 @@ def login():
             # التوجيه حسب الدور الجديد
             if user.role == 'student':
                 return redirect(url_for('main.student'))
-            elif user.role == 'department_officer':
-                return redirect(url_for('main.department_officer'))
+            elif user.role == 'section_head':
+                return redirect(url_for('main.section_head'))
             elif user.role == 'system_admin':
                 return redirect(url_for('main.system_administrator'))
         
@@ -158,7 +158,8 @@ def system_administrator():
                 password_hash=hashed_pw,
                 role=user_form.role.data,
                 university_id=user_form.university_id.data if user_form.role.data == 'student' else None,
-                department=user_form.department.data if (user_form.role.data == 'department_officer' or user_form.role.data == 'student') else None,
+                department=user_form.department.data if (user_form.role.data == 'section_head' or user_form.role.data == 'student') else None,
+                college=user_form.college.data if (user_form.role.data == 'student' or user_form.role.data == 'section_head') else None,
                 stage=user_form.stage.data if user_form.role.data == 'student' else None,
                 study_type=user_form.study_type.data if user_form.role.data == 'student' else None
             )
@@ -195,19 +196,25 @@ def system_administrator():
         active_tab=active_tab
     )
 
-# لوحة تحكم مسؤول القسم
-@main_routes.route('/department_officer')
+# لوحة تحكم مسؤول الشعبة
+@main_routes.route('/section_head')
 @login_required
-def department_officer():
-    """يعرض لوحة تحكم مسؤول القسم لمراجعة طلبات الطلاب."""
-    if current_user.role != 'department_officer':
+def section_head():
+    """يعرض لوحة تحكم مسؤول الشعبة لمراجعة طلبات الطلاب."""
+    if current_user.role != 'section_head':
         return redirect(url_for('main.login'))
     
-    # جلب الطلبات الخاصة بقسم المسؤول الحالي فقط
-    records = ClearanceStatus.query.filter_by(department=current_user.department).all()
+    # جلب الطلبات الخاصة بقسم المسؤول الحالي
+    # إذا كان المسؤول مخصصاً لكلية معينة، يتم تصفية الطلاب حسب تلك الكلية
+    query = ClearanceStatus.query.filter_by(department=current_user.department)
+    
+    if current_user.college:
+        query = query.join(User, ClearanceStatus.student_id == User.id).filter(User.college == current_user.college)
+        
+    records = query.all()
     form = UpdateStatusForm()
     return render_template(
-        'department_officer.html', 
+        'section_head.html', 
         records=records, 
         form=form, 
         vapid_public_key=current_app.config.get('VAPID_PUBLIC_KEY')
@@ -233,10 +240,17 @@ def edit_user(user_id):
         user.role = form.role.data
         user.university_id = form.university_id.data or None
         user.department = form.department.data or None
+        
         if form.role.data == 'student':
+            user.college = form.college.data
             user.stage = form.stage.data
             user.study_type = form.study_type.data
+        elif form.role.data == 'section_head':
+            user.college = form.college.data or None
+            user.stage = None
+            user.study_type = None
         else:
+            user.college = None
             user.stage = None
             user.study_type = None
         
@@ -254,11 +268,11 @@ def edit_user(user_id):
     return redirect(url_for('main.system_administrator'))
 
 
-# تحديث حالة الطالب من قبل مسؤول القسم
+# تحديث حالة الطالب من قبل مسؤول الشعبة
 @main_routes.route('/update_status', methods=['POST'])
 @login_required
 def update_status():
-    """يتعامل مع تحديث مسؤول القسم لحالة الطالب."""
+    """يتعامل مع تحديث مسؤول الشعبة لحالة الطالب."""
     form = UpdateStatusForm()
     student_id = request.form.get('student_id')
     department = request.form.get('department')
@@ -269,7 +283,7 @@ def update_status():
         # توجيه ذكي حسب الدور
         if current_user.role == 'system_admin':
             return redirect(url_for('main.system_administrator'))
-        return redirect(url_for('main.department_officer'))
+        return redirect(url_for('main.section_head'))
 
     if form.validate_on_submit():
         rec.status = form.status.data
@@ -279,7 +293,7 @@ def update_status():
         # --- التنبيه الداخلي (Notification) ---
         student_notification = Notification(
             user_id=student_id,
-            message=f"قسم {rec.department} غيّر حالتك إلى {rec.status}"
+            message=f"شعبة {rec.department} غيّرت حالتك إلى {rec.status}"
         )
         db.session.add(student_notification)
 
@@ -288,7 +302,7 @@ def update_status():
         for s in student_subs:
             send_push_to_subscription(
                 sub_info={ "endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth} },
-                payload={ "title": "تحديث الحالة", "body": f"قسم {rec.department} غيّر حالتك إلى {rec.status}" }
+                payload={ "title": "تحديث الحالة", "body": f"شعبة {rec.department} غيّرت حالتك إلى {rec.status}" }
             )
         
         # --- البريد الإلكتروني ---
@@ -318,7 +332,7 @@ def update_status():
 
     if current_user.role == 'system_admin':
         return redirect(url_for('main.system_administrator'))
-    return redirect(url_for('main.department_officer'))
+    return redirect(url_for('main.section_head'))
 
 
 # حذف مستخدم
@@ -377,8 +391,8 @@ def request_clearance():
                 status='pending'
             ))
 
-            # البحث عن مسؤول القسم وتنبيهه
-            officer_user = User.query.filter_by(role='department_officer', department=dept_name).first()
+            # البحث عن مسؤول الشعبة وتنبيهه
+            officer_user = User.query.filter_by(role='section_head', department=dept_name).first()
             if officer_user:
                 
                 message_content = f"طلب براءة ذمة جديد من الطالب {current_user.university_id}."
@@ -455,8 +469,8 @@ def mark_notifications_read():
     
     if current_user.role == 'student':
         return redirect(url_for('main.student'))
-    elif current_user.role == 'department_officer':
-        return redirect(url_for('main.department_officer'))
+    elif current_user.role == 'section_head':
+        return redirect(url_for('main.section_head'))
     else:
         return redirect(url_for('main.system_administrator'))
 
@@ -492,7 +506,7 @@ def send_async_email(app, msg):
 def send_status_email(user, department, status, comment=None):
     """إرسال بريد إلكتروني للطالب عند تحديث حالته."""
     status_text = {
-        'approved': 'موافق عليه ✅',
+        'approved': 'موافق ✅',
         'rejected': 'مرفوض ❌'
     }.get(status, status)
     
@@ -502,7 +516,7 @@ def send_status_email(user, department, status, comment=None):
     
     msg.body = f'''مرحباً {user.full_name or user.username}،
 
-تم تحديث حالة براءة الذمة الخاصة بك في قسم: {department}
+تم تحديث حالة براءة الذمة الخاصة بك في شعبة: {department}
 الحالة الجديدة: {status_text}
 '''
     if comment:
@@ -535,9 +549,9 @@ def send_welcome_email(user, raw_password):
     Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
 
 def send_reset_email(user):
-    """إرسال بريد استعادة كلمة المرور."""
+    """إرسال بريد إعادة تعيين كلمة المرور."""
     token = user.get_reset_token()
-    msg = Message('طلب استعادة كلمة المرور',
+    msg = Message('طلب إعادة تعيين كلمة المرور',
                   sender=current_app.config.get('MAIL_USERNAME'),
                   recipients=[user.email])
     msg.body = f'''لإعادة تعيين كلمة المرور، يرجى زيارة الرابط التالي:
@@ -559,7 +573,7 @@ def reset_request():
             send_reset_email(user)
         flash('تم إرسال بريد إلكتروني بتعليمات إعادة تعيين كلمة المرور.', 'info')
         return redirect(url_for('main.login'))
-    return render_template('reset_request.html', title='استعادة كلمة المرور', form=form)
+    return render_template('reset_request.html', title='إعادة تعيين كلمة المرور', form=form)
 
 # تعيين كلمة مرور جديدة عبر التوكن
 @main_routes.route("/reset_password/<token>", methods=['GET', 'POST'])
@@ -649,7 +663,8 @@ def import_students():
                         return None
 
                     email = get_val(['البريد الإلكتروني', 'البريد الالكتروني', 'email', 'Email'])
-                    department = get_val(['القسم', 'department', 'Department'])
+                    department = get_val(['القسم', 'الشعبة', 'department', 'Department'])
+                    college = get_val(['الكلية', 'college', 'College'])
                     stage = get_val(['المرحلة', 'stage', 'Stage'])
                     study_type = get_val(['نوع الدراسة', 'نوع الدراسة', 'Study Type'])
 
@@ -672,6 +687,7 @@ def import_students():
                         email=email,
                         role='student',
                         department=department,
+                        college=college,
                         stage=stage,
                         study_type=study_type
                     )

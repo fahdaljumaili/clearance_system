@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}لوحة تحكم مسؤول القسم - {{ current_user.username }}{% endblock %}
+{% block title %}لوحة تحكم مسؤول الشعبة - {{ current_user.username }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>قسم: {{ current_user.username }}</h3>
+    <h3>شعبة: {{ current_user.username }}</h3>
 
     <!-- قسم الإشعارات (مشابه للطالب) -->
     <div class="d-flex align-items-center">
@@ -61,9 +61,54 @@
 <!-- جدول الطلبات الواردة -->
 <div class="card mt-3 border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="card-title mb-0 fw-bold">
-            <i class="bi bi-list-task me-2"></i>طلبات براءة الذمة
-        </h5>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="bi bi-list-task me-2"></i>طلبات براءة الذمة
+            </h5>
+            <div class="d-flex gap-2 align-items-center">
+                <input type="text" id="record-search" class="form-control form-control-sm"
+                    onkeyup="filterTable()" placeholder="بحث بالاسم أو الرقم الجامعي...">
+                
+                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
+                        type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filters">
+                    <i class="bi bi-sliders"></i> تصفية
+                </button>
+                
+                <select id="status-filter" class="form-select form-select-sm" onchange="filterTable()">
+                    <option value="">كل الحالات</option>
+                    <option value="pending">قيد الانتظار</option>
+                    <option value="approved">موافق</option>
+                    <option value="rejected">مرفوض</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <!-- قسم الفلاتر المتقدمة المنهار -->
+    <div class="collapse border-bottom" id="advanced-filters">
+        <div class="card-body bg-light py-2">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <select id="college-filter" class="form-select form-select-sm" onchange="filterTable()">
+                        <option value="">كل الكليات</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="dept-filter" class="form-select form-select-sm" onchange="filterTable()">
+                        <option value="">كل الأقسام</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="stage-filter" class="form-select form-select-sm" onchange="filterTable()">
+                        <option value="">كل المراحل</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="study-filter" class="form-select form-select-sm" onchange="filterTable()">
+                        <option value="">نوع الدراسة (الكل)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -72,18 +117,24 @@
                     <tr>
                         <th class="py-3">الرقم الجامعي</th>
                         <th class="py-3">اسم الطالب</th>
-                        <th class="py-3">القسم / المرحلة / الدراسة</th>
+                        <th class="py-3">القسم / الكلية / المرحلة / الدراسة</th>
                         <th class="py-3">الإجراء</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- حلقة تكرار لعرض كل طلب وارد للقسم -->
+                    <!-- حلقة تكرار لعرض كل طلب وارد للشعبة -->
                     {% for record in records %}
-                    <tr>
-                        <td>{{ record.student.university_id }}</td>
-                        <td>{{ record.student.full_name or record.student.username }}</td>
+                    <tr class="record-row" 
+                        data-status="{{ record.status }}"
+                        data-college="{{ record.student.college or '' }}"
+                        data-dept="{{ record.student.department or '' }}"
+                        data-stage="{{ record.student.stage or '' }}"
+                        data-study="{{ record.student.study_type or '' }}">
+                        <td class="student-id">{{ record.student.university_id }}</td>
+                        <td class="student-name">{{ record.student.full_name or record.student.username }}</td>
                         <td>
                             <small class="d-block text-muted">القسم: {{ record.student.department or '-' }}</small>
+                            <small class="d-block text-muted">الكلية: {{ record.student.college or '-' }}</small>
                             <small class="d-block text-muted">المرحلة: {{ record.student.stage or '-' }}</small>
                             <small class="d-block text-muted">الدراسة: {{ record.student.study_type or '-' }}</small>
                         </td>
@@ -101,8 +152,7 @@
                                     class="form-select form-select-sm w-auto" required aria-label="حالة الطلب">
                                     <option value="pending" {% if record.status=='pending' %}selected{% endif %}>قيد
                                         الانتظار</option>
-                                    <option value="approved" {% if record.status=='approved' %}selected{% endif %}>موافق
-                                        عليه</option>
+                                    <option value="approved" {% if record.status=='approved' %}selected{% endif %}>موافق</option>
                                     <option value="rejected" {% if record.status=='rejected' %}selected{% endif %}>مرفوض
                                     </option>
                                 </select>
@@ -138,7 +188,7 @@
     </div>
     <div class="card-body p-4">
         <p class="text-muted mb-4">قم بتفعيل الإشعارات ليصلك إشعار فوري على جهازك عند تقديم طالب جديد لطلب براءة ذمة
-            لقسمك.</p>
+            لشعبتك.</p>
         <div class="d-flex gap-3">
             <button id="enable-notifications" class="btn btn-outline-primary px-4"
                 data-vapid-key="{{ vapid_public_key }}">
@@ -155,4 +205,74 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/push-subscription.js') }}"></script>
+<script>
+    // --- تصفية جدول الطلبات ---
+    function filterTable() {
+        const searchTerm = document.getElementById("record-search").value.toLowerCase();
+        const statusFilter = document.getElementById("status-filter").value;
+        const collegeFilter = document.getElementById("college-filter").value;
+        const deptFilter = document.getElementById("dept-filter").value;
+        const stageFilter = document.getElementById("stage-filter").value;
+        const studyFilter = document.getElementById("study-filter").value;
+
+        document.querySelectorAll("tr.record-row").forEach(row => {
+            const id = row.querySelector(".student-id").textContent.toLowerCase();
+            const name = row.querySelector(".student-name").textContent.toLowerCase();
+            const status = row.getAttribute("data-status");
+            const college = row.getAttribute("data-college") || '';
+            const dept = row.getAttribute("data-dept") || '';
+            const stage = row.getAttribute("data-stage") || '';
+            const study = row.getAttribute("data-study") || '';
+
+            const matchesSearch = id.includes(searchTerm) || name.includes(searchTerm);
+            const matchesStatus = (statusFilter === "" || status === statusFilter);
+            const matchesCollege = (collegeFilter === "" || college === collegeFilter);
+            const matchesDept = (deptFilter === "" || dept === deptFilter);
+            const matchesStage = (stageFilter === "" || stage === stageFilter);
+            const matchesStudy = (studyFilter === "" || study === studyFilter);
+
+            row.style.display = (matchesSearch && matchesStatus && matchesCollege && matchesDept && matchesStage && matchesStudy) ? "" : "none";
+        });
+    }
+
+    // --- ملء خيارات التصفية ديناميكياً ---
+    function populateFilters() {
+        const colleges = new Set();
+        const depts = new Set();
+        const stages = new Set();
+        const studies = new Set();
+
+        document.querySelectorAll("tr.record-row").forEach(row => {
+            if (row.getAttribute("data-college")) colleges.add(row.getAttribute("data-college"));
+            if (row.getAttribute("data-dept")) depts.add(row.getAttribute("data-dept"));
+            if (row.getAttribute("data-stage")) stages.add(row.getAttribute("data-stage"));
+            if (row.getAttribute("data-study")) studies.add(row.getAttribute("data-study"));
+        });
+
+        const fillSelect = (id, values) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const currentVal = select.value;
+            // احتفظ بالخيار الأول (الكل) وحذف البقية
+            while (select.options.length > 1) select.remove(1);
+            Array.from(values).sort().forEach(val => {
+                const opt = document.createElement("option");
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        };
+
+        fillSelect("college-filter", colleges);
+        fillSelect("dept-filter", depts);
+        fillSelect("stage-filter", stages);
+        fillSelect("study-filter", studies);
+    }
+
+    // تشغيل عند تحميل الصفحة
+    document.addEventListener("DOMContentLoaded", () => {
+        populateFilters();
+    });
+</script>
 {% endblock %}

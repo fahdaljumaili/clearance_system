@@ -12,10 +12,11 @@ class User(db.Model, UserMixin):
     university_id = db.Column(db.String(20), unique=True, nullable=True)  # الرقم الجامعي (خاص بالطلاب)
     username = db.Column(db.String(50), unique=True, nullable=True)       # اسم المستخدم (للموظفين والمدراء)
     email = db.Column(db.String(120), unique=True, nullable=True)         # البريد الإلكتروني
-    password_hash = db.Column(db.String(128), nullable=False)             # كلمة المرور المشفرة
-    role = db.Column(db.String(20), nullable=False)  # دور المستخدم: 'student', 'system_admin', 'department_officer'
+    password_hash = db.Column(db.String(255), nullable=False)             # كلمة المرور المشفرة
+    role = db.Column(db.String(20), nullable=False)  # دور المستخدم: 'student', 'system_admin', 'section_head'
     full_name = db.Column(db.String(100), nullable=True) # الاسم الكامل (للعرض فقط)
-    department = db.Column(db.String(100), nullable=True) # القسم (للموظفين والطلاب)
+    department = db.Column(db.String(100), nullable=True) # الشعبة (للموظفين والطلاب)
+    college = db.Column(db.String(100), nullable=True)    # الكلية (للطلاب)
     stage = db.Column(db.String(50), nullable=True)       # المرحلة الدراسية (للطلاب)
     study_type = db.Column(db.String(50), nullable=True)  # نوع الدراسة: صباحي/مسائي (للطلاب)
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # تاريخ إنشاء الحساب
@@ -60,9 +61,9 @@ class User(db.Model, UserMixin):
 class ClearanceStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # معرف الطالب
-    department = db.Column(db.String(100), nullable=False)  # اسم القسم المعني بالموافقة
-    status = db.Column(db.String(20), default='pending')  # الحالة: pending (قيد الانتظار), approved (موافق عليه), rejected (مرفوض)
-    comment = db.Column(db.Text, nullable=True) # ملاحظات مسؤول القسم
+    department = db.Column(db.String(100), nullable=False)  # اسم الشعبة المعنية بالموافقة
+    status = db.Column(db.String(20), default='pending')  # الحالة: pending (قيد الانتظار), approved (موافق), rejected (مرفوض)
+    comment = db.Column(db.Text, nullable=True) # ملاحظات مسؤول الشعبة
     updated_at = db.Column(db.DateTime, default=datetime.utcnow) # تاريخ آخر تحديث
 
     # علاقة مع نموذج المستخدم (الطالب)

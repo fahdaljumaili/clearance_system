@@ -30,7 +30,7 @@ def create_app():
     app.config.from_object('config')
     # تعيين المفتاح السري (يجب تغييره في بيئة الإنتاج)
     app.config['SECRET_KEY'] = '4a8a6021f1e313a3f4e1f7d2f9d7c8c8b6a3e1d1f2a3a1b5'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../instance/database.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/clearance_db'
     
     # تهيئة الإضافات (Extensions) مع التطبيق
     db.init_app(app)

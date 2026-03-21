@@ -179,8 +179,10 @@
 
             <div class="student-info">
                 <!-- <p><strong>اسم الطالب</strong> (اسم الطالب الكامل)</p> -->
-                <p><strong>الرقم الجامعي</strong> {{ student.university_id }}</p>
-                <p><strong>تاريخ الإكمال</strong> {{ now.strftime('%Y-%m-%d') }}</p>
+                <p><strong>الرقم الجامعي:</strong> {{ student.university_id }}</p>
+                <p><strong>القسم:</strong> {{ student.department or '-' }}</p>
+                <p><strong>الكلية:</strong> {{ student.college or '-' }}</p>
+                <p><strong>تاريخ الإكمال:</strong> {{ now.strftime('%Y-%m-%d') }}</p>
             </div>
 
             <table class="table table-bordered align-middle">
@@ -195,7 +197,7 @@
                     {% for record in records %}
                     <tr>
                         <td>{{ record.department }}</td>
-                        <td class="status-approved">✔ موافق عليه</td>
+                        <td class="status-approved">✔ موافق</td>
                         <td>{{ record.comment or 'لا يوجد' }}</td>
                     </tr>
                     {% endfor %}

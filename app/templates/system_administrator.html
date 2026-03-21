@@ -76,7 +76,7 @@
             </div>
             <div class="col-md-7">
                 <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-bold">طلبات قيد الانتظار حسب القسم</div>
+                    <div class="card-header bg-white fw-bold">طلبات قيد الانتظار حسب الشعبة</div>
                     <div class="card-body">
                         <canvas id="deptBarChart"></canvas>
                     </div>
@@ -99,6 +99,29 @@
                         <option value="غير مكتمل">غير مكتمل</option>
                     </select>
                 </div>
+                <!-- الفلاتر المتقدمة (تشبه فلاتر التسوق) -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-3">
+                        <select id="college-filter" class="form-select form-select-sm" onchange="filterTable()">
+                            <option value="">كل الكليات</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="dept-filter" class="form-select form-select-sm" onchange="filterTable()">
+                            <option value="">كل الأقسام</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="stage-filter" class="form-select form-select-sm" onchange="filterTable()">
+                            <option value="">كل المراحل</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="study-filter" class="form-select form-select-sm" onchange="filterTable()">
+                            <option value="">نوع الدراسة (الكل)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -113,7 +136,12 @@
                         </thead>
                         <tbody id="supervisor-body">
                             {% for student in students %}
-                            <tr class="student-row" data-final-status="{{ student.final_status }}">
+                            <tr class="student-row" 
+                                data-final-status="{{ student.final_status }}"
+                                data-college="{{ student.college or '' }}"
+                                data-dept="{{ student.department or '' }}"
+                                data-stage="{{ student.stage or '' }}"
+                                data-study="{{ student.study_type or '' }}">
                                 <td class="student-id fw-bold">{{ student.university_id }}</td>
                                 <td>
                                     {% if student.final_status == 'مكتمل' %}
@@ -276,6 +304,10 @@
                                 {{ user_form.department.label(class="form-label") }}
                                 {{ user_form.department(class="form-control") }}
                             </div>
+                            <div class="mb-3" id="collegeField" style="display:none;">
+                                {{ user_form.college.label(class="form-label") }}
+                                {{ user_form.college(class="form-control") }}
+                            </div>
                             <div class="mb-3" id="stageField" style="display:none;">
                                 {{ user_form.stage.label(class="form-label") }}
                                 {{ user_form.stage(class="form-control") }}
@@ -320,12 +352,7 @@
                                 </div>
                                 <div class="mb-3">
                                     {{ edit_user_form.password.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ edit_user_form.password(class="form-control", id="edit_password") }}
-                                        <button class="btn btn-outline-secondary" type="button" id="toggleEditPassword">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
+                                    {{ edit_user_form.password(class="form-control", id="edit_password", placeholder="اتركه فارغاً إذا لم ترد تغييرها") }}
                                 </div>
                                 <div class="mb-3">
                                     {{ edit_user_form.role.label(class="form-label") }}
@@ -338,6 +365,10 @@
                                 <div class="mb-3" id="editDeptField" style="display:none;">
                                     {{ edit_user_form.department.label(class="form-label") }}
                                     {{ edit_user_form.department(class="form-control", id="edit_department") }}
+                                </div>
+                                <div class="mb-3" id="editCollegeField" style="display:none;">
+                                    {{ edit_user_form.college.label(class="form-label") }}
+                                    {{ edit_user_form.college(class="form-control", id="edit_college") }}
                                 </div>
                                 <div class="mb-3" id="editStageField" style="display:none;">
                                     {{ edit_user_form.stage.label(class="form-label") }}
@@ -363,16 +394,51 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <span>دليل المستخدمين</span>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
                             <input type="text" id="user-search" class="form-control form-control-sm"
-                                onkeyup="filterUsersTable()" placeholder="بحث بالاسم أو البريد...">
+                                onkeyup="filterUsersTable()" placeholder="بحث بالاسم أو البريد أو الرقم الجامعي...">
+                            
+                            <!-- زر الفلترة المتقدمة (يظهر عند اختيار طالب) -->
+                            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
+                                    type="button" data-bs-toggle="collapse" data-bs-target="#user-advanced-filters" 
+                                    id="user-filter-btn" style="display: none !important;">
+                                <i class="bi bi-sliders"></i> تصفية
+                            </button>
+
                             <select id="user-role-filter" class="form-select form-select-sm"
-                                onchange="filterUsersTable()">
+                                onchange="handleUserRoleChange()">
                                 <option value="">كل الأدوار</option>
-                                <option value="department_officer">مسؤول القسم</option>
+                                <option value="section_head">مسؤول الشعبة</option>
                                 <option value="student">طالب</option>
                                 <option value="system_admin">مدير النظام</option>
                             </select>
+                        </div>
+                    </div>
+                    <!-- قسم الفلاتر المتقدمة المنهار -->
+                    <div class="collapse border-bottom" id="user-advanced-filters">
+                        <div class="card-body bg-light py-2">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <select id="user-college-filter" class="form-select form-select-sm" onchange="filterUsersTable()">
+                                        <option value="">كل الكليات</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="user-dept-filter" class="form-select form-select-sm" onchange="filterUsersTable()">
+                                        <option value="">كل الأقسام</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="user-stage-filter" class="form-select form-select-sm" onchange="filterUsersTable()">
+                                        <option value="">كل المراحل</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="user-study-filter" class="form-select form-select-sm" onchange="filterUsersTable()">
+                                        <option value="">نوع الدراسة (الكل)</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -389,7 +455,12 @@
                                 </thead>
                                 <tbody id="users-body">
                                     {% for user in all_users %}
-                                    <tr class="user-row" data-role="{{ user.role }}">
+                                    <tr class="user-row" 
+                                        data-role="{{ user.role }}"
+                                        data-college="{{ user.college or '' }}"
+                                        data-dept="{{ user.department or '' }}"
+                                        data-stage="{{ user.stage or '' }}"
+                                        data-study="{{ user.study_type or '' }}">
                                         <td>{{ loop.index }}</td>
                                         <td>
                                             <div class="fw-bold user-name">
@@ -400,6 +471,7 @@
                                                     data-email="{{ user.email }}" data-role="{{ user.role }}"
                                                     data-uni-id="{{ user.university_id or '' }}"
                                                     data-department="{{ user.department or '' }}"
+                                                    data-college="{{ user.college or '' }}"
                                                     data-stage="{{ user.stage or '' }}"
                                                     data-study-type="{{ user.study_type or '' }}">
                                                     {{ user.full_name or user.username }}
@@ -410,19 +482,23 @@
                                         <td>
                                             {% if user.role == 'system_admin' %}
                                             <span class="badge bg-dark">مدير النظام</span>
-                                            {% elif user.role == 'department_officer' %}
-                                            <span class="badge bg-primary">مسؤول القسم</span>
+                                            {% elif user.role == 'section_head' %}
+                                            <span class="badge bg-primary">مسؤول الشعبة</span>
                                             {% else %}
                                             <span class="badge bg-secondary">طالب</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if user.role == 'student' %}
-                                            {{ user.university_id }}
-                                            {% elif user.role == 'department_officer' %}
-                                            {{ user.department or '' }}
+                                            الرقم الجامعي: {{ user.university_id }}<br>
+                                            القسم: {{ user.department or '-' }}<br>
+                                            الكلية: {{ user.college or '-' }}<br>
+                                            المرحلة: {{ user.stage or '-' }}<br>
+                                            نوع الدراسة: {{ user.study_type or '-' }}
+                                            {% elif user.role == 'section_head' %}
+                                            {{ user.department or '-' }}
                                             {% else %}
-
+                                            -
                                             {% endif %}
                                         </td>
                                         <td>
@@ -503,6 +579,7 @@
                                 <li><code>الرقم الجامعي</code></li>
                                 <li><code>الاسم الكامل</code></li>
                                 <li><code>القسم</code></li>
+                                <li><code>الكلية</code></li>
                                 <li><code>المرحلة</code></li>
                                 <li><code>نوع الدراسة</code></li>
                                 <li><code>البريد الإلكتروني</code></li>
@@ -525,27 +602,100 @@
 
 {% block scripts %}
 <script>
-    // --- تصفية جدول المستخدمين (بحث + تصفية حسب الدور) ---
+    // --- تصفية جدول المستخدمين (بحث + تصفية حسب الدور + فلاتر متقدمة) ---
     function filterUsersTable() {
         const searchTerm = document.getElementById("user-search").value.toLowerCase();
         const roleFilter = document.getElementById("user-role-filter").value;
+        const collegeFilter = document.getElementById("user-college-filter").value;
+        const deptFilter = document.getElementById("user-dept-filter").value;
+        const stageFilter = document.getElementById("user-stage-filter").value;
+        const studyFilter = document.getElementById("user-study-filter").value;
 
         document.querySelectorAll("#users-body tr.user-row").forEach(row => {
             const name = row.querySelector(".user-name").textContent.toLowerCase();
             const email = row.querySelector(".user-email").textContent.toLowerCase();
+            const details = row.cells[3] ? row.cells[3].textContent.toLowerCase() : '';
             const role = row.getAttribute("data-role");
+            const college = row.getAttribute("data-college") || '';
+            const dept = row.getAttribute("data-dept") || '';
+            const stage = row.getAttribute("data-stage") || '';
+            const study = row.getAttribute("data-study") || '';
 
-            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm) || details.includes(searchTerm);
             const matchesRole = (roleFilter === "" || role === roleFilter);
+            
+            // الفلاتر المتقدمة لا تطبق إلا إذا كان الدور المختار هو طالب
+            let matchesAdvanced = true;
+            if (roleFilter === 'student') {
+                matchesAdvanced = (collegeFilter === "" || college === collegeFilter) &&
+                                  (deptFilter === "" || dept === deptFilter) &&
+                                  (stageFilter === "" || stage === stageFilter) &&
+                                  (studyFilter === "" || study === studyFilter);
+            }
 
-            row.style.display = (matchesSearch && matchesRole) ? "" : "none";
+            row.style.display = (matchesSearch && matchesRole && matchesAdvanced) ? "" : "none";
         });
+    }
+
+    function handleUserRoleChange() {
+        const roleFilter = document.getElementById("user-role-filter").value;
+        const filterBtn = document.getElementById("user-filter-btn");
+        const advancedFilters = document.getElementById("user-advanced-filters");
+
+        if (roleFilter === 'student') {
+            filterBtn.setAttribute('style', 'display: flex !important;');
+        } else {
+            filterBtn.setAttribute('style', 'display: none !important;');
+            // إغلاق الفلاتر المفتوحة ومسح قيمها عند تغيير الدور
+            const bsCollapse = bootstrap.Collapse.getInstance(advancedFilters);
+            if (bsCollapse) bsCollapse.hide();
+            
+            document.getElementById("user-college-filter").value = "";
+            document.getElementById("user-dept-filter").value = "";
+            document.getElementById("user-stage-filter").value = "";
+            document.getElementById("user-study-filter").value = "";
+        }
+        filterUsersTable();
+    }
+
+    function populateUserDirectoryFilters() {
+        const colleges = new Set();
+        const depts = new Set();
+        const stages = new Set();
+        const studies = new Set();
+
+        document.querySelectorAll("#users-body tr.user-row[data-role='student']").forEach(row => {
+            if (row.getAttribute("data-college")) colleges.add(row.getAttribute("data-college"));
+            if (row.getAttribute("data-dept")) depts.add(row.getAttribute("data-dept"));
+            if (row.getAttribute("data-stage")) stages.add(row.getAttribute("data-stage"));
+            if (row.getAttribute("data-study")) studies.add(row.getAttribute("data-study"));
+        });
+
+        const fillSelect = (id, values) => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const currentVal = select.value;
+            while (select.options.length > 1) select.remove(1);
+            Array.from(values).sort().forEach(val => {
+                const opt = document.createElement("option");
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        };
+
+        fillSelect("user-college-filter", colleges);
+        fillSelect("user-dept-filter", depts);
+        fillSelect("user-stage-filter", stages);
+        fillSelect("user-study-filter", studies);
     }
 
     // --- منطق الحقول الديناميكية في النموذج (السيناريو: إضافة مستخدم) ---
     const roleSelect = document.getElementById('roleSelect');
     const uniIdField = document.getElementById('uniIdField');
     const deptField = document.getElementById('deptField');
+    const collegeField = document.getElementById('collegeField');
     const stageField = document.getElementById('stageField');
     const studyTypeField = document.getElementById('studyTypeField');
     const usernameField = document.getElementById('usernameField');
@@ -555,23 +705,29 @@
         if (roleSelect.value === 'student') {
             uniIdField.style.display = 'block';
             deptField.style.display = 'block';
+            collegeField.style.display = 'block';
             stageField.style.display = 'block';
             studyTypeField.style.display = 'block';
             usernameField.style.display = 'none';
             fullNameField.style.display = 'block';
-            // تغيير التسمية للطالب
             fullNameField.querySelector('label').innerText = 'اسم الطالب';
-        } else if (roleSelect.value === 'department_officer') {
+            deptField.querySelector('label').innerText = 'القسم';
+            collegeField.querySelector('label').innerText = 'الكلية';
+            collegeField.querySelector('label').innerText = 'الكلية';
+        } else if (roleSelect.value === 'section_head') {
             uniIdField.style.display = 'none';
             deptField.style.display = 'block';
+            collegeField.style.display = 'block';
             stageField.style.display = 'none';
             studyTypeField.style.display = 'none';
             usernameField.style.display = 'block';
-            fullNameField.style.display = 'block';
             fullNameField.querySelector('label').innerText = 'الاسم الكامل';
+            deptField.querySelector('label').innerText = 'الشعبة';
+            collegeField.querySelector('label').innerText = 'الكلية (اختياري)';
         } else {
             uniIdField.style.display = 'none';
             deptField.style.display = 'none';
+            collegeField.style.display = 'none';
             stageField.style.display = 'none';
             studyTypeField.style.display = 'none';
             usernameField.style.display = 'block';
@@ -582,21 +738,73 @@
     roleSelect.addEventListener('change', toggleFields);
     toggleFields(); // تشغيل عند التحميل
 
-    // --- تصفية جدول الطلاب (بحث + حالة) ---
+    // --- تصفية جدول الطلاب (بحث + حالة + فلاتر متقدمة) ---
     function filterTable() {
         const searchTerm = document.getElementById("search-input").value.toUpperCase();
         const statusFilter = document.getElementById("final-status-filter").value;
+        const collegeFilter = document.getElementById("college-filter").value;
+        const deptFilter = document.getElementById("dept-filter").value;
+        const stageFilter = document.getElementById("stage-filter").value;
+        const studyFilter = document.getElementById("study-filter").value;
 
         document.querySelectorAll("#supervisor-body tr.student-row").forEach(row => {
             const id = row.querySelector(".student-id").textContent.toUpperCase();
             const status = row.getAttribute("data-final-status");
+            const college = row.getAttribute("data-college");
+            const dept = row.getAttribute("data-dept");
+            const stage = row.getAttribute("data-stage");
+            const study = row.getAttribute("data-study");
 
             const matchesSearch = id.includes(searchTerm);
             const matchesStatus = (statusFilter === "" || status === statusFilter);
+            const matchesCollege = (collegeFilter === "" || college === collegeFilter);
+            const matchesDept = (deptFilter === "" || dept === deptFilter);
+            const matchesStage = (stageFilter === "" || stage === stageFilter);
+            const matchesStudy = (studyFilter === "" || study === studyFilter);
 
-            row.style.display = (matchesSearch && matchesStatus) ? "" : "none";
+            row.style.display = (matchesSearch && matchesStatus && matchesCollege && matchesDept && matchesStage && matchesStudy) ? "" : "none";
         });
     }
+
+    // وظيفة لتعبئة الفلاتر تلقائياً من البيانات الموجودة في الجدول
+    function populateFilters() {
+        const colleges = new Set();
+        const depts = new Set();
+        const stages = new Set();
+        const studies = new Set();
+
+        document.querySelectorAll("#supervisor-body tr.student-row").forEach(row => {
+            if (row.getAttribute("data-college")) colleges.add(row.getAttribute("data-college"));
+            if (row.getAttribute("data-dept")) depts.add(row.getAttribute("data-dept"));
+            if (row.getAttribute("data-stage")) stages.add(row.getAttribute("data-stage"));
+            if (row.getAttribute("data-study")) studies.add(row.getAttribute("data-study"));
+        });
+
+        const fillSelect = (id, values) => {
+            const select = document.getElementById(id);
+            const currentVal = select.value;
+            // احتفظ بالخيار الأول (الكل) وحذف البقية
+            while (select.options.length > 1) select.remove(1);
+            Array.from(values).sort().forEach(val => {
+                const opt = document.createElement("option");
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        };
+
+        fillSelect("college-filter", colleges);
+        fillSelect("dept-filter", depts);
+        fillSelect("stage-filter", stages);
+        fillSelect("study-filter", studies);
+    }
+
+    // تشغيل التعبئة عند تحميل الصفحة
+    document.addEventListener("DOMContentLoaded", () => {
+        populateFilters();
+        populateUserDirectoryFilters();
+    });
 
     // --- سكربت زر إظهار/إخفاء كلمة المرور ---
     const togglePassword = document.querySelector('#togglePassword');
@@ -642,13 +850,26 @@
             const role = button.getAttribute('data-role');
             const uniId = button.getAttribute('data-uni-id');
             const department = button.getAttribute('data-department');
+            const college = button.getAttribute('data-college');
             const stage = button.getAttribute('data-stage');
-            editUserModal.querySelector('#edit_department').value = department;
+            const studyType = button.getAttribute('data-study-type');
+
+            // تعبئة جميع حقول النموذج
+            editUserModal.querySelector('#edit_full_name').value = fullName || '';
+            editUserModal.querySelector('#edit_username').value = username || '';
+            editUserModal.querySelector('#edit_email').value = email || '';
+            editUserModal.querySelector('#edit_role').value = role || 'student';
+            editUserModal.querySelector('#edit_university_id').value = uniId || '';
+            editUserModal.querySelector('#edit_department').value = department || '';
+            editUserModal.querySelector('#edit_college').value = college || '';
+            editUserModal.querySelector('#edit_stage').value = stage || '';
+            editUserModal.querySelector('#edit_study_type').value = studyType || '';
+
+            // تحديث رابط النموذج ليشير إلى المستخدم الصحيح
+            editUserModal.querySelector('form').action = `/user/${id}/edit`;
 
             // التأكد من أن حقل كلمة المرور فارغ دائماً عند فتح نافذة التعديل
-            const editPwd = editUserModal.querySelector('#edit_password');
-            editPwd.value = '';
-            editPwd.setAttribute('type', 'password');
+            editUserModal.querySelector('#edit_password').value = '';
 
             // تحديث الحقول الظاهرة يدوياً
             toggleEditFields();
@@ -659,6 +880,7 @@
     const editRoleSelect = document.getElementById('edit_role');
     const editUniIdField = document.getElementById('editUniIdField');
     const editDeptField = document.getElementById('editDeptField');
+    const editCollegeField = document.getElementById('editCollegeField');
     const editStageField = document.getElementById('editStageField');
     const editStudyTypeField = document.getElementById('editStudyTypeField');
     const editUsernameField = document.getElementById('edit_username').parentElement;
@@ -670,22 +892,29 @@
         if (role === 'student') {
             editUniIdField.style.display = 'block';
             editDeptField.style.display = 'block';
+            editCollegeField.style.display = 'block';
             editStageField.style.display = 'block';
             editStudyTypeField.style.display = 'block';
             editUsernameField.style.display = 'none';
             editFullNameField.style.display = 'block';
             editFullNameField.querySelector('label').innerText = 'اسم الطالب';
-        } else if (role === 'department_officer') {
+            editDeptField.querySelector('label').innerText = 'القسم';
+            editCollegeField.querySelector('label').innerText = 'الكلية';
+        } else if (role === 'section_head') {
             editUniIdField.style.display = 'none';
             editDeptField.style.display = 'block';
+            editCollegeField.style.display = 'block';
             editStageField.style.display = 'none';
             editStudyTypeField.style.display = 'none';
             editUsernameField.style.display = 'block';
             editFullNameField.style.display = 'block';
             editFullNameField.querySelector('label').innerText = 'الاسم الكامل';
+            editDeptField.querySelector('label').innerText = 'الشعبة';
+            editCollegeField.querySelector('label').innerText = 'الكلية (اختياري)';
         } else {
             editUniIdField.style.display = 'none';
             editDeptField.style.display = 'none';
+            editCollegeField.style.display = 'none';
             editStageField.style.display = 'none';
             editStudyTypeField.style.display = 'none';
             editUsernameField.style.display = 'block';

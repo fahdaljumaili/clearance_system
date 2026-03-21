@@ -25,20 +25,20 @@ class ClearanceRequestForm(FlaskForm):
     submit = SubmitField('تقديم طلب براءة الذمة')
 
 # نموذج تحديث حالة الطلب
-# يستخدمه مسؤول القسم لتغيير حالة الطالب (موافقة/رفض) وإضافة ملاحظات
+# يستخدمه مسؤول الشعبة لتغيير حالة الطالب (موافقة/رفض) وإضافة ملاحظات
 class UpdateStatusForm(FlaskForm):
     status = StringField('الحالة الجديدة', validators=[DataRequired()])
     comment = StringField('ملاحظة', validators=[Length(max=200)])
     submit = SubmitField('تحديث الحالة')
 
-# نموذج طلب استعادة كلمة المرور
+# نموذج إعادة تعيين كلمة المرور
 # يطلب البريد الإلكتروني لإرسال رابط إعادة التعيين
 class RequestResetForm(FlaskForm):
     email = StringField('البريد الإلكتروني', validators=[DataRequired(), Email()])
-    submit = SubmitField('طلب استعادة كلمة المرور')
+    submit = SubmitField('إعادة تعيين كلمة المرور')
 
 # نموذج تعيين كلمة المرور الجديدة
-# يستخدم بعد الضغط على رابط الاستعادة
+# يستخدم بعد الضغط على رابط إعادة التعيين
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('كلمة المرور الجديدة', validators=[DataRequired()])
     confirm_password = PasswordField('تأكيد كلمة المرور', validators=[DataRequired(), EqualTo('password')])
@@ -47,7 +47,7 @@ class ResetPasswordForm(FlaskForm):
 # نموذج إضافة مستخدم جديد (مستخدم من قبل مدير النظام)
 # يدعم إضافة جميع أنواع المستخدمين مع حقول ديناميكية حسب الدور
 class AddUserForm(FlaskForm):
-    role = SelectField('نوع الحساب', choices=[('student', 'طالب'), ('department_officer', 'مسؤول القسم'), ('system_admin', 'مدير النظام')], validators=[DataRequired()])
+    role = SelectField('نوع الحساب', choices=[('student', 'طالب'), ('section_head', 'مسؤول الشعبة'), ('system_admin', 'مدير النظام')], validators=[DataRequired()])
     full_name = StringField('الاسم الكامل')
     username = StringField('اسم المستخدم', validators=[Optional(), Length(min=3, max=50)])
     email = StringField('البريد الإلكتروني', validators=[DataRequired(), Email()])
@@ -56,6 +56,7 @@ class AddUserForm(FlaskForm):
     # حقول إضافية اختيارية حسب النوع
     university_id = StringField('الرقم الجامعي')
     department = StringField('القسم')
+    college = StringField('الكلية')
     stage = StringField('المرحلة')
     study_type = StringField('نوع الدراسة')
     submit = SubmitField('إضافة المستخدم')
@@ -86,7 +87,7 @@ class AddUserForm(FlaskForm):
 # نموذج تعديل بيانات المستخدم
 # مشابه لنموذج الإضافة لكن بدون التحقق الصارم من كلمة المرور (لأنها اختيارية عند التعديل)
 class EditUserForm(FlaskForm):
-    role = SelectField('نوع الحساب', choices=[('student', 'طالب'), ('department_officer', 'مسؤول القسم'), ('system_admin', 'مدير النظام')], validators=[DataRequired()])
+    role = SelectField('نوع الحساب', choices=[('student', 'طالب'), ('section_head', 'مسؤول الشعبة'), ('system_admin', 'مدير النظام')], validators=[DataRequired()])
     full_name = StringField('الاسم الكامل')
     username = StringField('اسم المستخدم', validators=[Optional(), Length(min=3, max=50)])
     email = StringField('البريد الإلكتروني', validators=[DataRequired(), Email()])
@@ -94,6 +95,7 @@ class EditUserForm(FlaskForm):
     # حقول إضافية
     university_id = StringField('الرقم الجامعي')
     department = StringField('القسم')
+    college = StringField('الكلية')
     stage = StringField('المرحلة')
     study_type = StringField('نوع الدراسة')
     submit = SubmitField('حفظ التغييرات')

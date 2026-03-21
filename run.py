@@ -20,6 +20,12 @@ with app.app_context():
         db.session.commit()
         print("Dropped temp_password column from user table for security.")
 
+    # إضافة عمود الكلية إذا لم يكن موجوداً (ترقية قاعدة البيانات)
+    if 'college' not in columns:
+        db.session.execute(text('ALTER TABLE user ADD COLUMN college VARCHAR(100)'))
+        db.session.commit()
+        print("Added college column to user table.")
+
     # التحقق من وجود مستخدم مدير، وإنشاؤه تلقائياً إذا لم يكن موجوداً
     if not User.query.filter_by(role='system_admin').first():
         print("Creating default admin user...")
