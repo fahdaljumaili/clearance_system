@@ -16,11 +16,11 @@ with open(VAPID_KEYS_PATH, 'r', encoding='utf-8') as f:
 # تعريف المتغيرات لاستخدامها في التطبيق
 VAPID_PUBLIC_KEY = vapid_keys.get('publicKey')
 VAPID_PRIVATE_KEY = vapid_keys.get('privateKey')
-VAPID_EMAIL = "[EMAIL_ADDRESS]"  # غيّره إلى بريدك الحقيقي
+VAPID_EMAIL = "email@example.com"  # غيّره إلى بريدك الحقيقي
 
 # إعدادات البريد الإلكتروني (Flask-Mail)
 MAIL_SERVER = 'smtp.gmail.com'
 MAIL_PORT = 587
 MAIL_USE_TLS = True
-MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or '[EMAIL_ADDRESS]'
-MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'example'
+MAIL_USERNAME = 'email@example.com'
+MAIL_PASSWORD = '[PASSWORD]'

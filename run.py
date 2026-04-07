@@ -11,20 +11,7 @@ with app.app_context():
     # إنشاء الجداول في قاعدة البيانات إن لم تكن موجودة مسبقاً
     db.create_all()
 
-    # إضافة عمود temp_password إذا لم يكن موجوداً (ترقية قاعدة البيانات)
-    from sqlalchemy import inspect, text
-    inspector = inspect(db.engine)
-    columns = [col['name'] for col in inspector.get_columns('user')]
-    if 'temp_password' in columns:
-        db.session.execute(text('ALTER TABLE user DROP COLUMN temp_password'))
-        db.session.commit()
-        print("Dropped temp_password column from user table for security.")
 
-    # إضافة عمود الكلية إذا لم يكن موجوداً (ترقية قاعدة البيانات)
-    if 'college' not in columns:
-        db.session.execute(text('ALTER TABLE user ADD COLUMN college VARCHAR(100)'))
-        db.session.commit()
-        print("Added college column to user table.")
 
     # التحقق من وجود مستخدم مدير، وإنشاؤه تلقائياً إذا لم يكن موجوداً
     if not User.query.filter_by(role='system_admin').first():
@@ -44,4 +31,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     # تشغيل التطبيق في وضع التصحيح (Debug Mode)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)

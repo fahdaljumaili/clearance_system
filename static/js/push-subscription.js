@@ -10,20 +10,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const vapidKey = enableBtn.dataset.vapidKey;
   console.log('🔑 VAPID key:', vapidKey);
 
-  // 1) تحقق من بروتوكول الأمان
-  // المتصفحات تتطلب HTTPS أو localhost لعمل Service Workers والإشعارات
-  if (!location.origin.startsWith('https') && !location.hostname.startsWith('localhost')) {
-    alert('Push يحتاج HTTPS أو localhost');   // Edge لا يعتبر 127.0.0.1 آمناً في بعض الأحيان
+  // 1) تحقق من دعم المتصفح Service Workers
+  if (!('serviceWorker' in navigator)) {
+    console.warn('المتصفح لا يدعم Service Worker');
+    enableBtn.addEventListener('click', () => alert('متصفحك لا يدعم الإشعارات الفورية.'));
     return;
   }
 
-  // 2) تسجيل Service Worker (مرة واحدة عند تحميل الصفحة)
-  // هذا الملف هو المسؤول عن استقبال الإشعارات في الخلفية
-  const registration = await navigator.serviceWorker.register('/service-worker.js');
+  // 1.5) تحقق من بروتوكول الأمان
+  if (!location.origin.startsWith('https') && !location.hostname.startsWith('localhost')) {
+    alert('الإشعارات تحتاج اتصال HTTPS آمن.');
+    return;
+  }
 
-  // انتظار الجاهزية
-  await navigator.serviceWorker.ready;
-  console.log('✅ Service Worker جاهز');
+  let registration;
+  try {
+    // 2) تسجيل Service Worker (مرة واحدة عند تحميل الصفحة)
+    registration = await navigator.serviceWorker.register('/service-worker.js');
+    await navigator.serviceWorker.ready;
+    console.log('✅ Service Worker جاهز');
+  } catch (err) {
+    console.error('فشل في تسجيل Service Worker:', err);
+    enableBtn.addEventListener('click', () => alert('عذراً، متصفحك أو اتصالك (بسبب حماية SSL المؤقتة) يمنع تفعيل الإشعارات.'));
+    return;
+  }
 
   // 3) معالجة النقر على زر "تفعيل الإشعارات"
   enableBtn.addEventListener('click', async () => {
