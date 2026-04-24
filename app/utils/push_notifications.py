@@ -1,5 +1,9 @@
-# app/utils/push_notifications.py
-# أدوات مساعدة لإرسال إشعارات الويب الفورية (Web Push Notifications)
+"""
+app/utils/push_notifications.py
+الغاية من الملف:
+ملف مساند (Utility) مخصص لتجميع وظائف إرسال الإشعارات الفورية (Web Push).
+يعزل تعقيدات مكتبة pywebpush ويوفر دالة بسيطة وموحدة يستدعيها النظام عند تحديث حالة براءة ذمة أي طالب.
+"""
 
 import json
 from pywebpush import webpush, WebPushException

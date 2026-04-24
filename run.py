@@ -1,3 +1,10 @@
+"""
+run.py
+الغاية من الملف: 
+هذا هو الملف الرئيسي (Entry Point) لتشغيل التطبيق. 
+يقوم بتهيئة السيرفر المحلي، التأكد من إنشاء الجداول في قاعدة البيانات، وإضافة مستخدم افتراضي (مدير نظام) إذا لم يكن موجوداً.
+"""
+
 from app import create_app
 from app.extensions import db
 from app.models import User

@@ -2,6 +2,13 @@
 # نماذج Flask-WTF للتعامل مع النماذج الإلكترونية في التطبيق
 # تشمل تسجيل الدخول، إنشاء الحسابات، وطلبات براءة الذمة
 
+"""
+app/forms.py
+الغاية من الملف:
+تعريف جميع نماذج الإدخال (Forms) المستخدمة في واجهات الموقع باستخدام مكتبة Flask-WTF.
+هذا الملف يسهل عمليات التحقق من صحة البيانات (Validation) وحماية النماذج من ثغرات (CSRF).
+"""
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, ValidationError

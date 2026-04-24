@@ -1,3 +1,10 @@
+"""
+app/models.py
+الغاية من الملف:
+تعريف هياكل البيانات والجداول (Models) الخاصة بقاعدة البيانات باستخدام تقنية SQLAlchemy (ORM).
+يحتوي على تفاصيل المستخدمين، طلبات براءة الذمة، الإشعارات، واشتراكات الأجهزة.
+"""
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash

@@ -1,3 +1,10 @@
+"""
+app/extensions.py
+الغاية من الملف:
+تعريف الإضافات والمكتبات المستخدمة في المشروع (مثل قاعدة البيانات، والبريد) بشكل مستقل.
+الهدف من هذا الملف هو منع حدوث مشكلة "الاستدعاء الدائري" (Circular Imports) بين الملفات الأخرى.
+"""
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect

@@ -1,4 +1,5 @@
 {
+  "_comment": "هذا الملف خاص بأداة (WebHint) لتحليل أخطاء الواجهات (HTML/CSS). أوقفنا هنا تنبيه نوع الزر (button-type).",
   "extends": [
     "development"
   ],

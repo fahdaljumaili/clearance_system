@@ -1,3 +1,10 @@
+"""
+app/__init__.py
+الغاية من الملف:
+هذا الملف هو (Application Factory) وظيفته تجميع وتجهيز تطبيق Flask.
+يقوم بتهيئة الإضافات (قاعدة البيانات، الحماية، البريد)، ويقوم بربط المسارات (Routes) بالتطبيق الرئيسي.
+"""
+
 import os
 from flask import Flask
 from .routes import main_routes

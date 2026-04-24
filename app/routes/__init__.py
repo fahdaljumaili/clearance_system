@@ -1,3 +1,10 @@
+"""
+app/routes/__init__.py
+الغاية من الملف:
+هذا هو الملف البرمجي الأكبر في النظام (Controllers)، حيث يحتوي على جميع مسارات (الروابط) صفحات الموقع.
+يتحكم في منطق العمليات مثل تسجيل الدخول، إنشاء الطلبات، تحديث الحالات، واستيراد ملفات الإكسل.
+"""
+
 import os
 import pandas as pd
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app

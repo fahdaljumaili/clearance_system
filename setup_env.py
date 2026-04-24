@@ -1,3 +1,10 @@
+"""
+setup_env.py
+الغاية من الملف:
+ملف برمجي مساعد يُستخدم لتوليد وإعداد مفاتيح VAPID (العامة والخاصة).
+هذه المفاتيح ضرورية جداً لتشغيل ميزة "الإشعارات الفورية" (Push Notifications) بشكل آمن.
+"""
+
 import os
 import json
 from pywebpush import WebPush, webpush
