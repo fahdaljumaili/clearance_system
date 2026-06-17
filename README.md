@@ -7,6 +7,7 @@
 ![Framework](https://img.shields.io/badge/Framework-Flask-green)
 ![Database](https://img.shields.io/badge/Database-MySQL-blue)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > A graduation project that automates the university clearance process, transforming it into a fully electronic system to simplify procedures for students and staff.
 
@@ -90,3 +91,7 @@ The **University Clearance System** is a web application designed to solve the p
     python run.py
     ```
     Open your browser at: `http://localhost:5000`
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

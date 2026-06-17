@@ -5,6 +5,8 @@ config.py
 مثل مفاتيح التشفير، إعدادات بريد الإشعارات، وإعدادات الربط.
 """
 
+# config.py
+
 import os
 import json
 
